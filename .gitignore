@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Ambiente / segredos
+.env
+.env.*
+!.env.example
+
+# Uploads gerados em runtime
+backend/app/uploads/
+backend/uploads/
+
+# Node / Vite
+node_modules/
+dist/
+*.log
+
+# SO / editores
+.DS_Store
+Thumbs.db
+.idea/
