@@ -30,6 +30,7 @@ const FIELD_LABELS = {
   weight: 'Peso', weight_at_session: 'Peso no dia', age_years: 'Idade (anos)',
   age_months: 'Idade (meses)', dose_mg_m2: 'Dose (mg/m2)',
   planned_sessions: 'Sessoes planejadas', interval_days: 'Intervalo entre sessoes',
+  pain_score: 'Escala de dor',
 }
 
 function describeValidation(item) {
