@@ -5,6 +5,7 @@ import api, { getErrorMessage } from '../api'
 import PetAgenda from './PetAgenda'
 import FileUpload from './FileUpload'
 import ProtocolPanel from './ProtocolPanel'
+import { formatDate, todayISO } from '../dates'
 
 export const PET_TABS = ['dashboard', 'protocolos', 'sessao', 'registros', 'documentos', 'agenda']
 
@@ -18,7 +19,7 @@ function PetDetail({ pet, onUpdated, subTab = 'dashboard', onSubTabChange }) {
 
   // Session form
   const [sessionForm, setSessionForm] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: todayISO(),
     protocol_id: '', session_type: 'quimioterapia', drug_name: '',
     dose_mg_m2: '', weight_at_session: String(pet.weight), notes: '',
   })
@@ -101,7 +102,7 @@ function PetDetail({ pet, onUpdated, subTab = 'dashboard', onSubTabChange }) {
   }
 
   const weightChartData = chartData?.weight_history?.map(p => ({
-    date: new Date(p.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+    date: formatDate(p.date, { day: '2-digit', month: '2-digit' }),
     peso: p.weight,
   })) || []
 
@@ -119,7 +120,7 @@ function PetDetail({ pet, onUpdated, subTab = 'dashboard', onSubTabChange }) {
           </p>
           <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {pet.cancer_type && <span className="badge badge-pink">{pet.cancer_type}</span>}
-            {pet.treatment_start_date && <span className="badge badge-mint">Inicio: {new Date(pet.treatment_start_date).toLocaleDateString('pt-BR')}</span>}
+            {pet.treatment_start_date && <span className="badge badge-mint">Inicio: {formatDate(pet.treatment_start_date)}</span>}
           </div>
         </div>
       </div>
@@ -197,7 +198,7 @@ function PetDetail({ pet, onUpdated, subTab = 'dashboard', onSubTabChange }) {
             {sessions.length === 0 ? <p style={{ color: 'var(--text-secondary)' }}>Nenhuma sessao.</p> : (
               sessions.slice(0, 5).map(s => (
                 <div key={s.id} className="timeline-item">
-                  <span className="date">{new Date(s.date).toLocaleDateString('pt-BR')}</span>
+                  <span className="date">{formatDate(s.date)}</span>
                   <p className="drug">{s.session_type}{s.drug_name ? ` - ${s.drug_name}` : ''}</p>
                   {s.dose_administered && <p style={{ fontSize: 13 }}>Dose: {s.dose_administered}mg ({s.dose_mg_m2} mg/m2) - Peso: {s.weight_at_session}kg</p>}
                   {s.notes && <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{s.notes}</p>}
@@ -256,7 +257,7 @@ function PetDetail({ pet, onUpdated, subTab = 'dashboard', onSubTabChange }) {
           {records.length === 0 ? <p style={{ color: 'var(--text-secondary)' }}>Nenhum registro do tutor ainda.</p> : (
             records.map(r => (
               <div key={r.id} className="timeline-item">
-                <span className="date">{new Date(r.date).toLocaleDateString('pt-BR')}</span>
+                <span className="date">{formatDate(r.date)}</span>
                 <div style={{ marginTop: 4, fontSize: 14 }}>
                   {r.weight && <span><strong>Peso:</strong> {r.weight}kg </span>}
                   {r.general_status && <span className="badge badge-mint" style={{ marginRight: 6 }}>{r.general_status}</span>}
@@ -317,7 +318,7 @@ function PetDetail({ pet, onUpdated, subTab = 'dashboard', onSubTabChange }) {
                   <div style={{ flex: 1 }}>
                     <strong>{d.title}</strong>
                     <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                      {d.doc_type.replace('_', ' ')} {d.date && `- ${new Date(d.date).toLocaleDateString('pt-BR')}`}
+                      {d.doc_type.replace('_', ' ')} {d.date && `- ${formatDate(d.date)}`}
                     </div>
                   </div>
                   <a href={d.file_url} target="_blank" rel="noreferrer">

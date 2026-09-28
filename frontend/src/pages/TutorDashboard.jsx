@@ -6,6 +6,7 @@ import { PawPrint, CirclePlus, NotebookPen, Activity, CalendarDays } from 'lucid
 import PetAgenda from '../components/PetAgenda'
 import AppHeader from '../components/AppHeader'
 import ProtocolPanel from '../components/ProtocolPanel'
+import { formatDate, todayISO } from '../dates'
 
 const PET_TABS = ['diario', 'tratamento', 'agenda']
 
@@ -44,7 +45,7 @@ function TutorDashboard({ user, onLogout }) {
     treatment_start_date: '', vet_id: '', clinic_id: '',
   })
   const [recordForm, setRecordForm] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: todayISO(),
     weight: '', symptoms: '', general_status: '',
     appetite: '', energy_level: '', notes: '',
   })
@@ -311,7 +312,7 @@ function TutorDashboard({ user, onLogout }) {
             ) : (
               records.map(r => (
                 <div key={r.id} className="timeline-item">
-                  <span className="date">{new Date(r.date).toLocaleDateString('pt-BR')}</span>
+                  <span className="date">{formatDate(r.date)}</span>
                   <div style={{ marginTop: 4, fontSize: 14 }}>
                     {r.weight && <span><strong>Peso:</strong> {r.weight}kg </span>}
                     {r.general_status && <span className="badge badge-mint" style={{ marginRight: 6 }}>{r.general_status}</span>}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../api'
+import { formatDate } from '../dates'
 
 function PetAgenda({ pet, canCreate = false }) {
   const [reminders, setReminders] = useState([])
@@ -125,7 +126,7 @@ function PetAgenda({ pet, canCreate = false }) {
                 <strong style={{ fontSize: 14 }}>{r.title}</strong>
               </div>
               <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
-                {new Date(r.date).toLocaleDateString('pt-BR')}
+                {formatDate(r.date)}
                 {r.time && ` as ${r.time}`}
                 {r.recurrence && ` (${r.recurrence})`}
               </p>
@@ -155,7 +156,7 @@ function PetAgenda({ pet, canCreate = false }) {
                 borderRadius: 'var(--radius-sm)', marginBottom: 6,
                 opacity: 0.6, textDecoration: 'line-through',
               }}>
-                <span style={{ fontSize: 13 }}>{r.title} - {new Date(r.date).toLocaleDateString('pt-BR')}</span>
+                <span style={{ fontSize: 13 }}>{r.title} - {formatDate(r.date)}</span>
               </div>
             ))}
           </div>
