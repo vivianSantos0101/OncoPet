@@ -62,7 +62,6 @@ class Pet(Base):
     clinic = relationship("Clinic")
     sessions = relationship("ChemoSession", back_populates="pet", cascade="all, delete-orphan")
     protocols = relationship("ChemoProtocol", back_populates="pet", cascade="all, delete-orphan")
-    records = relationship("PetRecord", back_populates="pet", cascade="all, delete-orphan")
     documents = relationship("Document", back_populates="pet", cascade="all, delete-orphan")
     reminders = relationship("Reminder", back_populates="pet", cascade="all, delete-orphan")
 
@@ -116,25 +115,6 @@ class ChemoSession(Base):
 
     pet = relationship("Pet", back_populates="sessions")
     protocol = relationship("ChemoProtocol", back_populates="sessions")
-
-
-class PetRecord(Base):
-    """Registro de acompanhamento - feito pelo TUTOR (diario)."""
-    __tablename__ = "pet_records"
-
-    id = Column(Integer, primary_key=True, index=True)
-    pet_id = Column(Integer, ForeignKey("pets.id"), nullable=False)
-    date = Column(Date, nullable=False)
-    weight = Column(Float, nullable=True)
-    symptoms = Column(Text, nullable=True)
-    general_status = Column(String(50), nullable=True)
-    appetite = Column(String(50), nullable=True)
-    energy_level = Column(String(50), nullable=True)
-    photo_url = Column(String(500), nullable=True)
-    notes = Column(Text, nullable=True)
-    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
-
-    pet = relationship("Pet", back_populates="records")
 
 
 class Document(Base):

@@ -1,7 +1,7 @@
 """Fixtures dos testes.
 
-Usa SQLite em arquivo temporario no lugar do PostgreSQL e nao sobe o
-lifespan (MongoDB), entao roda sem Docker.
+Usa SQLite em arquivo temporario no lugar do PostgreSQL e um MongoDB em
+memoria (mongomock-motor) no lugar do MongoDB real, entao roda sem Docker.
 """
 
 import os
@@ -13,6 +13,9 @@ os.environ["DATABASE_URL"] = f"sqlite:///{_db_file}"
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
+from mongomock_motor import AsyncMongoMockClient  # noqa: E402
+
+from app import mongodb  # noqa: E402
 from app.database import Base, engine  # noqa: E402
 from app.main import app  # noqa: E402
 
@@ -21,7 +24,9 @@ from app.main import app  # noqa: E402
 def client():
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
-    # Sem "with": nao dispara o lifespan que conecta no MongoDB
+    # MongoDB em memoria, limpo a cada teste
+    mongodb.db = AsyncMongoMockClient()["oncopet_test"]
+    # Sem "with": nao dispara o lifespan que conecta no MongoDB real
     yield TestClient(app)
 
 

@@ -7,7 +7,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..models import Pet, User, ChemoSession, PetRecord
+from ..models import Pet, User, ChemoSession
+from ..mongodb import get_daily_logs_collection
+from ..services.daily_logs import list_logs
 from ..schemas import (
     PetCreate, PetUpdate, PetResponse, DoseCalculation, DoseResult,
     BreedsResponse, ChartDataResponse, WeightPoint
@@ -102,22 +104,22 @@ def update_pet(pet_id: int, data: PetUpdate, db: Session = Depends(get_db), user
 
 
 @router.get("/{pet_id}/chart", response_model=ChartDataResponse)
-def get_pet_chart_data(pet_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
-    """Dados para grafico do veterinario."""
+async def get_pet_chart_data(pet_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    """Dados para grafico: peso das sessoes (relacional) + diario do tutor (MongoDB)."""
     pet = db.query(Pet).filter(Pet.id == pet_id).first()
     if not pet:
         raise HTTPException(status_code=404, detail="Pet nao encontrado")
 
     sessions = db.query(ChemoSession).filter(ChemoSession.pet_id == pet_id).order_by(ChemoSession.date).all()
-    records = db.query(PetRecord).filter(PetRecord.pet_id == pet_id).order_by(PetRecord.date).all()
+    records = await list_logs(get_daily_logs_collection(), pet_id, newest_first=False)
 
     # Montar historico de peso (sessions + records)
     weight_points = []
     for s in sessions:
         weight_points.append(WeightPoint(date=s.date, weight=s.weight_at_session))
     for r in records:
-        if r.weight:
-            weight_points.append(WeightPoint(date=r.date, weight=r.weight))
+        if r.get("weight"):
+            weight_points.append(WeightPoint(date=date.fromisoformat(r["date"]), weight=r["weight"]))
 
     weight_points.sort(key=lambda x: x.date)
 

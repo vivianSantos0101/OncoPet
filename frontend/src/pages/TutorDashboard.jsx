@@ -6,7 +6,10 @@ import { PawPrint, CirclePlus, NotebookPen, Activity, CalendarDays } from 'lucid
 import PetAgenda from '../components/PetAgenda'
 import AppHeader from '../components/AppHeader'
 import ProtocolPanel from '../components/ProtocolPanel'
-import { formatDate, todayISO } from '../dates'
+import SymptomPicker from '../components/SymptomPicker'
+import PainScale from '../components/PainScale'
+import DailyLogList from '../components/DailyLogList'
+import { todayISO } from '../dates'
 
 const PET_TABS = ['diario', 'tratamento', 'agenda']
 
@@ -46,7 +49,7 @@ function TutorDashboard({ user, onLogout }) {
   })
   const [recordForm, setRecordForm] = useState({
     date: todayISO(),
-    weight: '', symptoms: '', general_status: '',
+    weight: '', symptoms: [], other_symptoms: '', pain_score: null, general_status: '',
     appetite: '', energy_level: '', notes: '',
   })
   const [error, setError] = useState('')
@@ -135,7 +138,9 @@ function TutorDashboard({ user, onLogout }) {
         pet_id: selectedPet.id,
         date: recordForm.date,
         weight: recordForm.weight ? parseFloat(recordForm.weight) : null,
-        symptoms: recordForm.symptoms || null,
+        symptoms: recordForm.symptoms,
+        other_symptoms: recordForm.other_symptoms || null,
+        pain_score: recordForm.pain_score,
         general_status: recordForm.general_status || null,
         appetite: recordForm.appetite || null,
         energy_level: recordForm.energy_level || null,
@@ -143,7 +148,7 @@ function TutorDashboard({ user, onLogout }) {
       })
       setSuccess('Registro salvo!')
       setTimeout(() => setSuccess(''), 3000)
-      setRecordForm({ ...recordForm, symptoms: '', general_status: '', appetite: '', energy_level: '', notes: '' })
+      setRecordForm({ ...recordForm, symptoms: [], other_symptoms: '', pain_score: null, general_status: '', appetite: '', energy_level: '', notes: '' })
       loadRecords(selectedPet.id)
       loadPets()
     } catch (err) {
@@ -297,8 +302,11 @@ function TutorDashboard({ user, onLogout }) {
                   </select>
                 </div>
               </div>
-              <label>Sintomas</label>
-              <textarea value={recordForm.symptoms} onChange={e => setRecordForm({...recordForm, symptoms: e.target.value})} rows={2} placeholder="Descreva sintomas observados..." />
+              <label>Sintomas observados</label>
+              <SymptomPicker value={recordForm.symptoms} onChange={symptoms => setRecordForm({...recordForm, symptoms})} />
+              <input value={recordForm.other_symptoms} onChange={e => setRecordForm({...recordForm, other_symptoms: e.target.value})} placeholder="Outros sintomas (opcional)" />
+              <label>Escala de dor</label>
+              <PainScale value={recordForm.pain_score} onChange={pain_score => setRecordForm({...recordForm, pain_score})} />
               <label>Observacoes</label>
               <textarea value={recordForm.notes} onChange={e => setRecordForm({...recordForm, notes: e.target.value})} rows={2} placeholder="Notas livres..." />
               <button type="submit" className="secondary" style={{ width: '100%', marginTop: 8 }}>Salvar Registro</button>
@@ -307,22 +315,7 @@ function TutorDashboard({ user, onLogout }) {
 
           <div className="card">
             <h4 style={{ marginBottom: 16 }}>Historico de registros</h4>
-            {records.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)' }}>Nenhum registro ainda.</p>
-            ) : (
-              records.map(r => (
-                <div key={r.id} className="timeline-item">
-                  <span className="date">{formatDate(r.date)}</span>
-                  <div style={{ marginTop: 4, fontSize: 14 }}>
-                    {r.weight && <span><strong>Peso:</strong> {r.weight}kg </span>}
-                    {r.general_status && <span className="badge badge-mint" style={{ marginRight: 6 }}>{r.general_status}</span>}
-                    {r.appetite && <span className="badge badge-pink">{r.appetite}</span>}
-                  </div>
-                  {r.symptoms && <p style={{ marginTop: 6, fontSize: 13 }}><strong>Sintomas:</strong> {r.symptoms}</p>}
-                  {r.notes && <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>{r.notes}</p>}
-                </div>
-              ))
-            )}
+            <DailyLogList records={records} />
           </div>
         </div>
       )}

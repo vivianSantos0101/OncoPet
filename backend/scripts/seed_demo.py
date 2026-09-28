@@ -45,7 +45,7 @@ CLINICS = [
 # drugs: quando o protocolo alterna medicamentos, lista (nome, dose mg/m2) por sessao
 PATIENTS = [
     {
-        "name": "Thor", "species": "cao", "breed": "Labrador Retriever", "age": (8, 3),
+        "name": "Thor", "pain": (1, 0), "species": "cao", "breed": "Labrador Retriever", "age": (8, 3),
         "cancer": "Linfoma multicêntrico", "tutor": "joao", "vet": "dra_ana", "clinic": 0,
         "weight": 31.2, "trend": -0.12,
         "protocols": [{
@@ -60,7 +60,7 @@ PATIENTS = [
         "documents": [("Hemograma completo", "exame_sangue", -14), ("Laudo citológico - linfonodo", "laudo", -72)],
     },
     {
-        "name": "Luna", "species": "cao", "breed": "Golden Retriever", "age": (10, 1),
+        "name": "Luna", "pain": (3, 0.25), "species": "cao", "breed": "Golden Retriever", "age": (10, 1),
         "cancer": "Osteossarcoma apendicular", "tutor": "mariana", "vet": "dra_ana", "clinic": 0,
         "weight": 29.5, "trend": -0.08,
         "protocols": [{
@@ -74,7 +74,7 @@ PATIENTS = [
         "documents": [("Raio-X de tórax (sem metástases)", "exame_imagem", -30)],
     },
     {
-        "name": "Mia", "species": "gato", "breed": "Siamês", "age": (11, 6),
+        "name": "Mia", "pain": (2, 0), "species": "gato", "breed": "Siamês", "age": (11, 6),
         "cancer": "Carcinoma de células escamosas", "tutor": "joao", "vet": "dra_ana", "clinic": 0,
         "weight": 4.3, "trend": -0.02,
         "protocols": [{
@@ -85,7 +85,7 @@ PATIENTS = [
         "documents": [],
     },
     {
-        "name": "Bob", "species": "cao", "breed": "SRD (Sem Raça Definida)", "age": (12, 0),
+        "name": "Bob", "pain": (1, 0), "species": "cao", "breed": "SRD (Sem Raça Definida)", "age": (12, 0),
         "cancer": "Mastocitoma grau II", "tutor": "carla", "vet": "dra_ana", "clinic": 1,
         "weight": 18.4, "trend": 0.03,
         "protocols": [
@@ -98,7 +98,7 @@ PATIENTS = [
         "documents": [("Bioquímico - função hepática", "exame_sangue", -6)],
     },
     {
-        "name": "Nina", "species": "cao", "breed": "Poodle", "age": (9, 8),
+        "name": "Nina", "pain": (2, 0.1), "species": "cao", "breed": "Poodle", "age": (9, 8),
         "cancer": "Carcinoma mamário", "tutor": "carla", "vet": "dr_marcos", "clinic": 1,
         "weight": 7.8, "trend": -0.06,
         "protocols": [{
@@ -110,7 +110,7 @@ PATIENTS = [
         "documents": [("Hemograma - neutropenia", "exame_sangue", -2)],
     },
     {
-        "name": "Frida", "species": "gato", "breed": "Persa", "age": (7, 2),
+        "name": "Frida", "pain": (1, 0), "species": "gato", "breed": "Persa", "age": (7, 2),
         "cancer": "Linfoma alimentar", "tutor": "pedro", "vet": "dra_ana", "clinic": 0,
         "weight": 3.9, "trend": 0.01,
         "protocols": [{
@@ -121,7 +121,7 @@ PATIENTS = [
         "documents": [],
     },
     {
-        "name": "Max", "species": "cao", "breed": "Boxer", "age": (7, 5),
+        "name": "Max", "pain": (2, 0.05), "species": "cao", "breed": "Boxer", "age": (7, 5),
         "cancer": "Hemangiossarcoma esplênico", "tutor": "rafael", "vet": "dr_marcos", "clinic": 1,
         "weight": 30.1, "trend": -0.15,
         "protocols": [{
@@ -132,7 +132,7 @@ PATIENTS = [
         "documents": [("Ultrassom abdominal", "exame_imagem", -45)],
     },
     {
-        "name": "Pipoca", "species": "cao", "breed": "Shih Tzu", "age": (6, 0),
+        "name": "Pipoca", "pain": (0, 0), "species": "cao", "breed": "Shih Tzu", "age": (6, 0),
         "cancer": "Tumor venéreo transmissível (TVT)", "tutor": "mariana", "vet": "dra_ana", "clinic": 0,
         "weight": 6.2, "trend": 0.02,
         "protocols": [{
@@ -144,16 +144,17 @@ PATIENTS = [
     },
 ]
 
+# Dias apos a sessao: (sintomas marcados, outros sintomas, estado, apetite, energia, dor extra)
 SIDE_EFFECTS = [
-    ("Vômito leve no dia seguinte à sessão", "regular", "reduzido", "baixo"),
-    ("Letargia por 2 dias após a sessão", "regular", "reduzido", "letargico"),
-    ("Diarreia leve", "regular", "normal", "normal"),
-    ("Recusou a ração pela manhã", "regular", "reduzido", "normal"),
+    (["vomito"], None, "regular", "reduzido", "baixo", 1),
+    (["letargia", "inapetencia"], None, "regular", "reduzido", "letargico", 1),
+    (["diarreia"], None, "regular", "normal", "normal", 0),
+    (["inapetencia"], "Recusou a ração pela manhã", "regular", "reduzido", "normal", 0),
 ]
 GOOD_DAYS = [
-    (None, "bom", "normal", "normal", "Brincou normalmente."),
-    (None, "otimo", "normal", "alto", "Muito disposto, passeio completo."),
-    (None, "bom", "normal", "normal", None),
+    ([], "bom", "normal", "normal", "Brincou normalmente."),
+    ([], "otimo", "normal", "alto", "Muito disposto, passeio completo."),
+    ([], "bom", "normal", "normal", None),
 ]
 
 
@@ -268,13 +269,17 @@ def seed(client, today: date = None, rng: random.Random = None) -> dict:
         day = first_day + timedelta(days=3)
         while day <= today - timedelta(days=1):
             after_session = any(0 < (day - s).days <= 3 for s in session_days)
+            base_pain, pain_trend = pt["pain"]
+            pain = base_pain + pain_trend * ((day - first_day).days / 7) + rng.choice([-1, 0, 0, 1])
+            other, notes = None, None
             if after_session and rng.random() < 0.6:
-                symptoms, status, appetite, energy = rng.choice(SIDE_EFFECTS)
-                notes = None
+                symptoms, other, status, appetite, energy, extra_pain = rng.choice(SIDE_EFFECTS)
+                pain += extra_pain
             else:
                 symptoms, status, appetite, energy, notes = rng.choice(GOOD_DAYS)
             events.append((day, "record", {
                 "pet_id": pet["id"], "date": day.isoformat(), "symptoms": symptoms,
+                "other_symptoms": other, "pain_score": max(0, min(10, round(pain))),
                 "general_status": status, "appetite": appetite, "energy_level": energy, "notes": notes,
             }))
             day += timedelta(days=7)

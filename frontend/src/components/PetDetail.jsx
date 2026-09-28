@@ -5,6 +5,7 @@ import api, { getErrorMessage } from '../api'
 import PetAgenda from './PetAgenda'
 import FileUpload from './FileUpload'
 import ProtocolPanel from './ProtocolPanel'
+import DailyLogList from './DailyLogList'
 import { formatDate, todayISO } from '../dates'
 
 export const PET_TABS = ['dashboard', 'protocolos', 'sessao', 'registros', 'documentos', 'agenda']
@@ -254,21 +255,7 @@ function PetDetail({ pet, onUpdated, subTab = 'dashboard', onSubTabChange }) {
       {subTab === 'registros' && (
         <div className="card">
           <h4 style={{ marginBottom: 16 }}>Registros do tutor</h4>
-          {records.length === 0 ? <p style={{ color: 'var(--text-secondary)' }}>Nenhum registro do tutor ainda.</p> : (
-            records.map(r => (
-              <div key={r.id} className="timeline-item">
-                <span className="date">{formatDate(r.date)}</span>
-                <div style={{ marginTop: 4, fontSize: 14 }}>
-                  {r.weight && <span><strong>Peso:</strong> {r.weight}kg </span>}
-                  {r.general_status && <span className="badge badge-mint" style={{ marginRight: 6 }}>{r.general_status}</span>}
-                  {r.appetite && <span className="badge badge-pink" style={{ marginRight: 6 }}>Apetite: {r.appetite}</span>}
-                  {r.energy_level && <span className="badge badge-mint">Energia: {r.energy_level}</span>}
-                </div>
-                {r.symptoms && <p style={{ marginTop: 6, fontSize: 13 }}><strong>Sintomas:</strong> {r.symptoms}</p>}
-                {r.notes && <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>{r.notes}</p>}
-              </div>
-            ))
-          )}
+          <DailyLogList records={records} emptyText="Nenhum registro do tutor ainda." />
         </div>
       )}
 
