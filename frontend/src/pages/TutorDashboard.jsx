@@ -1,16 +1,38 @@
 import { useState, useEffect } from 'react'
 import api, { getErrorMessage } from '../api'
 import Notifications from '../components/Notifications'
+import { useLocation, useNavigate, matchPath, Navigate } from 'react-router-dom'
 import { PawPrint, CirclePlus, NotebookPen, Activity, CalendarDays } from 'lucide-react'
 import PetAgenda from '../components/PetAgenda'
 import AppHeader from '../components/AppHeader'
 import ProtocolPanel from '../components/ProtocolPanel'
 
+const PET_TABS = ['diario', 'tratamento', 'agenda']
+
+/**
+ * Rotas do tutor:
+ *   /animais               meus animais
+ *   /animais/novo          cadastro
+ *   /animais/:petId/:aba   diario, tratamento ou agenda (sem aba abre o diario)
+ * Retorna null para URL desconhecida (redireciona para /animais).
+ */
+export function parseTutorRoute(pathname) {
+  const path = pathname.replace(/\/+$/, '') || '/'
+  if (path === '/animais') return { tab: 'pets' }
+  if (path === '/animais/novo') return { tab: 'novo' }
+  const match = matchPath('/animais/:petId/:aba?', path)
+  if (match && /^\d+$/.test(match.params.petId)) {
+    const aba = match.params.aba || 'diario'
+    if (PET_TABS.includes(aba)) return { tab: aba, petId: Number(match.params.petId) }
+  }
+  return null
+}
+
 function TutorDashboard({ user, onLogout }) {
   const [pets, setPets] = useState([])
-  const [selectedPet, setSelectedPet] = useState(null)
   const [records, setRecords] = useState([])
-  const [activeTab, setActiveTab] = useState('pets')
+  const [loaded, setLoaded] = useState(false)
+  const [lastPetId, setLastPetId] = useState(null)
   const [breeds, setBreeds] = useState({ dogs: [], cats: [] })
   const [vets, setVets] = useState([])
   const [clinics, setClinics] = useState([])
@@ -37,8 +59,40 @@ function TutorDashboard({ user, onLogout }) {
   }, [])
 
   const loadPets = async () => {
-    const res = await api.get('/pets/')
-    setPets(res.data)
+    try {
+      const res = await api.get('/pets/')
+      setPets(res.data)
+    } finally {
+      setLoaded(true)
+    }
+  }
+
+  // Tela atual vem da URL (voltar do navegador e F5 funcionam)
+  const location = useLocation()
+  const navigate = useNavigate()
+  const route = parseTutorRoute(location.pathname)
+  const activeTab = route?.tab
+  const selectedPet = route?.petId ? pets.find(p => p.id === route.petId) : null
+
+  useEffect(() => {
+    if (route?.petId) setLastPetId(route.petId)
+  }, [route?.petId])
+
+  useEffect(() => {
+    window.scrollTo({ top: 0 })
+  }, [activeTab, route?.petId])
+
+  // Ao abrir um pet (clique ou URL), carrega o diario e sugere o ultimo peso
+  useEffect(() => {
+    if (!selectedPet) return
+    loadRecords(selectedPet.id)
+    setRecordForm(form => ({ ...form, weight: String(selectedPet.weight) }))
+  }, [selectedPet?.id])
+
+  const goTo = (tab) => {
+    if (tab === 'pets') navigate('/animais')
+    else if (tab === 'novo') navigate('/animais/novo')
+    else navigate(`/animais/${lastPetId}/${tab}`)
   }
 
   const loadRecords = async (petId) => {
@@ -46,12 +100,7 @@ function TutorDashboard({ user, onLogout }) {
     setRecords(res.data)
   }
 
-  const selectPet = (pet) => {
-    setSelectedPet(pet)
-    loadRecords(pet.id)
-    setRecordForm({ ...recordForm, weight: String(pet.weight) })
-    setActiveTab('diario')
-  }
+  const selectPet = (pet) => navigate(`/animais/${pet.id}/diario`)
 
   const currentBreeds = petForm.species.includes('gato') ? breeds.cats : breeds.dogs
 
@@ -101,25 +150,27 @@ function TutorDashboard({ user, onLogout }) {
     }
   }
 
+  if (!route) return <Navigate to="/animais" replace />
+
   return (
     <div className="container">
       <Notifications />
       <AppHeader role="tutor" userName={user.full_name} onLogout={onLogout} />
 
       <nav className="nav-tabs">
-        <button className={activeTab === 'pets' ? 'active' : ''} onClick={() => setActiveTab('pets')}>
+        <button className={activeTab === 'pets' ? 'active' : ''} onClick={() => goTo('pets')}>
           <PawPrint /><span className="label-long">Meus Animais</span><span className="label-short">Animais</span>
         </button>
-        <button className={activeTab === 'novo' ? 'active' : ''} onClick={() => setActiveTab('novo')}>
+        <button className={activeTab === 'novo' ? 'active' : ''} onClick={() => goTo('novo')}>
           <CirclePlus /><span className="label-long">Cadastrar Animal</span><span className="label-short">Novo</span>
         </button>
-        <button className={activeTab === 'diario' ? 'active' : ''} onClick={() => setActiveTab('diario')} disabled={!selectedPet}>
+        <button className={activeTab === 'diario' ? 'active' : ''} onClick={() => goTo('diario')} disabled={!lastPetId}>
           <NotebookPen /><span className="label-long">Diario</span><span className="label-short">Diario</span>
         </button>
-        <button className={activeTab === 'tratamento' ? 'active' : ''} onClick={() => setActiveTab('tratamento')} disabled={!selectedPet}>
+        <button className={activeTab === 'tratamento' ? 'active' : ''} onClick={() => goTo('tratamento')} disabled={!lastPetId}>
           <Activity /><span className="label-long">Tratamento</span><span className="label-short">Tratamento</span>
         </button>
-        <button className={activeTab === 'agenda' ? 'active' : ''} onClick={() => setActiveTab('agenda')} disabled={!selectedPet}>
+        <button className={activeTab === 'agenda' ? 'active' : ''} onClick={() => goTo('agenda')} disabled={!lastPetId}>
           <CalendarDays /><span className="label-long">Agenda</span><span className="label-short">Agenda</span>
         </button>
       </nav>
@@ -137,7 +188,7 @@ function TutorDashboard({ user, onLogout }) {
             </div>
           ) : (
             pets.map(pet => (
-              <div key={pet.id} className={`pet-card ${selectedPet?.id === pet.id ? 'selected' : ''}`} onClick={() => selectPet(pet)}>
+              <div key={pet.id} className={`pet-card ${lastPetId === pet.id ? 'selected' : ''}`} onClick={() => selectPet(pet)}>
                 <div className="pet-avatar">{pet.name.charAt(0).toUpperCase()}</div>
                 <div style={{ flex: 1 }}>
                   <strong style={{ fontSize: 16 }}>{pet.name}</strong>
@@ -283,6 +334,14 @@ function TutorDashboard({ user, onLogout }) {
       {/* Agenda do pet */}
       {activeTab === 'agenda' && selectedPet && (
         <PetAgenda pet={selectedPet} canCreate={false} />
+      )}
+
+      {route.petId && !selectedPet && loaded && (
+        <div className="card empty-state">
+          <h3>Animal nao encontrado</h3>
+          <p>Confira se ele esta cadastrado na sua conta.</p>
+          <button className="primary" style={{ marginTop: 16 }} onClick={() => goTo('pets')}>Ver meus animais</button>
+        </div>
       )}
     </div>
   )
