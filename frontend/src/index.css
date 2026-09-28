@@ -258,6 +258,20 @@ label {
   margin-top: 4px;
 }
 
+/* ─── Progress bar (protocolos) ─── */
+.progress-track {
+  height: 10px;
+  background: var(--mint-light);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--mint-gradient);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
 /* ─── Timeline ─── */
 .timeline-item {
   border-left: 3px solid var(--mint);
