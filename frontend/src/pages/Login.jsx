@@ -38,7 +38,7 @@ function Login({ onLogin }) {
   return (
     <div className="login-container">
       <div className="login-box">
-        <h2>OncoVet</h2>
+        <h2>OncoPet</h2>
         <p style={{ textAlign: 'center', marginBottom: 32, color: 'var(--text-secondary)', fontSize: 14 }}>
           Gestao de Oncologia Veterinaria
         </p>

@@ -66,7 +66,7 @@ function VetDashboard({ user, onLogout }) {
   return (
     <div className="container">
       <div className="header">
-        <h1>OncoVet</h1>
+        <h1>OncoPet</h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <span className="role-badge vet">Veterinario</span>
           <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{user.full_name}</span>

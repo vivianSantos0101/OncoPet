@@ -1,11 +1,11 @@
 services:
   postgres:
     image: postgres:16
-    container_name: oncovet-postgres
+    container_name: oncopet-postgres
     environment:
-      POSTGRES_USER: oncovet
-      POSTGRES_PASSWORD: oncovet123
-      POSTGRES_DB: oncovet
+      POSTGRES_USER: oncopet
+      POSTGRES_PASSWORD: oncopet123
+      POSTGRES_DB: oncopet
     ports:
       - "5433:5432"
     volumes:
@@ -14,7 +14,7 @@ services:
 
   mongodb:
     image: mongo:7
-    container_name: oncovet-mongo
+    container_name: oncopet-mongo
     ports:
       - "27018:27017"
     volumes:

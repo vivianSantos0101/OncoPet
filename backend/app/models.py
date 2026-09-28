@@ -1,4 +1,4 @@
-"""Modelos ORM - OncoVet v3."""
+"""Modelos ORM - OncoPet v3."""
 
 from sqlalchemy import Column, Integer, String, Float, Date, DateTime, Text, ForeignKey, Boolean
 from sqlalchemy.orm import relationship

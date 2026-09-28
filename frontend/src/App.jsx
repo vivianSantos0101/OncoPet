@@ -4,19 +4,19 @@ import VetDashboard from './pages/VetDashboard'
 import TutorDashboard from './pages/TutorDashboard'
 
 function App() {
-  const [token, setToken] = useState(localStorage.getItem('oncovet_token'))
-  const [user, setUser] = useState(JSON.parse(localStorage.getItem('oncovet_user') || 'null'))
+  const [token, setToken] = useState(localStorage.getItem('oncopet_token'))
+  const [user, setUser] = useState(JSON.parse(localStorage.getItem('oncopet_user') || 'null'))
 
   const handleLogin = (newToken, userData) => {
-    localStorage.setItem('oncovet_token', newToken)
-    localStorage.setItem('oncovet_user', JSON.stringify(userData))
+    localStorage.setItem('oncopet_token', newToken)
+    localStorage.setItem('oncopet_user', JSON.stringify(userData))
     setToken(newToken)
     setUser(userData)
   }
 
   const handleLogout = () => {
-    localStorage.removeItem('oncovet_token')
-    localStorage.removeItem('oncovet_user')
+    localStorage.removeItem('oncopet_token')
+    localStorage.removeItem('oncopet_user')
     setToken(null)
     setUser(null)
   }
