@@ -1,82 +1,65 @@
-# OncoVet 🐾
+# OncoPet 🐾
 
-Sistema de gerenciamento de quimioterapia veterinária para oncologia animal.
+Sistema de acompanhamento de quimioterapia veterinária (oncologia animal), com visão do veterinário e do tutor.
 
-## Stack
+## Stack atual
 
-- **Backend:** Python 3.11+ / FastAPI / SQLAlchemy / SQLite
-- **Frontend:** React (Vite) / Axios
-- **Autenticação:** JWT (usuário/senha)
+- **Backend:** Python 3.11+ · FastAPI · SQLAlchemy · PostgreSQL · MongoDB (Motor)
+- **Frontend:** React 18 (Vite) · Axios · Recharts
+- **Auth:** JWT com papéis `vet` e `tutor`
 
-## Estrutura do Projeto
+> A especificação técnica alvo (MySQL, TypeScript, NumPy, dashboard paliativo, PDF) está em
+> [`docs/Requisitos_Tecnicos_OncoPet.pdf`](docs/Requisitos_Tecnicos_OncoPet.pdf).
+> O que falta está em [`docs/ANALISE_REQUISITOS.md`](docs/ANALISE_REQUISITOS.md).
+
+## Estrutura
 
 ```
-OncoVet/
+OncoPet/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py
-│   │   ├── config.py
-│   │   ├── database.py
-│   │   ├── models.py
+│   │   ├── main.py          # app FastAPI + registro de rotas
+│   │   ├── config.py        # configurações via variáveis de ambiente
+│   │   ├── database.py      # SQLAlchemy (PostgreSQL)
+│   │   ├── mongodb.py       # Motor (MongoDB)
+│   │   ├── models.py        # User, Clinic, Pet, ChemoSession, PetRecord, Document, Reminder
 │   │   ├── schemas.py
-│   │   ├── auth.py
-│   │   └── routers/
-│   │       ├── auth.py
-│   │       ├── tutors.py
-│   │       ├── pets.py
-│   │       └── sessions.py
+│   │   ├── auth.py          # JWT + dependências require_vet / get_current_user
+│   │   ├── breeds.py
+│   │   └── routers/         # auth, clinics, tutors, vets, pets, sessions,
+│   │                        # records, documents, reminders, exams (Mongo), uploads
 │   └── requirements.txt
 ├── frontend/
-│   ├── src/
-│   │   ├── App.jsx
-│   │   ├── api.js
-│   │   ├── pages/
-│   │   │   ├── Login.jsx
-│   │   │   └── Dashboard.jsx
-│   │   └── components/
-│   │       ├── PetForm.jsx
-│   │       ├── DoseCalculator.jsx
-│   │       ├── SessionForm.jsx
-│   │       └── Timeline.jsx
-│   ├── package.json
-│   └── vite.config.js
-└── README.md
+│   └── src/
+│       ├── App.jsx · api.js · main.jsx · index.css
+│       ├── pages/           # Login, VetDashboard, TutorDashboard
+│       └── components/      # PetDetail, PetAgenda, Notifications, FileUpload
+├── docs/
+├── docker-compose.yml       # Postgres :5433 + Mongo :27018
+└── .env.example
 ```
 
 ## Como rodar
 
-### Backend
 ```bash
-cd backend
-pip install -r requirements.txt
-uvicorn app.main:app --reload
-```
+# 1. Bancos
+docker compose up -d
 
-### Frontend
-```bash
+# 2. Backend
+cd backend
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload        # http://localhost:8000/docs
+
+# 3. Frontend (outro terminal)
 cd frontend
 npm install
-npm run dev
+npm run dev                          # http://localhost:5173
 ```
 
-## Requisitos Funcionais (MVP)
+As configurações têm defaults compatíveis com o `docker-compose.yml`. Para mudar, copie `.env.example` para `.env` e exporte as variáveis antes de subir o backend.
 
-| ID   | Descrição |
-|------|-----------|
-| RF01 | Cadastrar pet (nome, espécie, raça, peso) vinculado a tutor |
-| RF02 | Calcular superfície corporal (peso kg → m²) e dose automática |
-| RF03 | Registrar sessão (data, quimioterápico, dose, observações) |
-| RF04 | Exibir histórico/linha do tempo com evolução de peso |
-
-## Requisitos Não Funcionais (MVP)
-
-| ID    | Descrição |
-|-------|-----------|
-| RNF01 | Stack enxuta: FastAPI + SQLite + React SPA |
-| RNF02 | Autenticação JWT simples (sem níveis de permissão) |
-| RNF03 | Interface integrada: ver pet, calcular dose e registrar sessão na mesma tela |
-
-## Fórmula de Superfície Corporal
+## Fórmula de superfície corporal
 
 - **Cães:** SC (m²) = 0.101 × peso(kg)^0.734
 - **Gatos:** SC (m²) = 0.101 × peso(kg)^0.667
