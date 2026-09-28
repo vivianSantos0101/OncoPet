@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react'
 import api, { getErrorMessage } from '../api'
+import { formatDate, todayISO } from '../dates'
 
 const STATUS_LABEL = { ativo: 'Ativo', concluido: 'Concluido', suspenso: 'Suspenso' }
 const STATUS_BADGE = { ativo: 'badge-mint', concluido: 'badge-mint', suspenso: 'badge-pink' }
 
 const emptyForm = () => ({
   name: '', drug_name: '', dose_mg_m2: '', planned_sessions: '',
-  interval_days: '', start_date: new Date().toISOString().split('T')[0], notes: '',
+  interval_days: '', start_date: todayISO(), notes: '',
 })
 
-const fmtDate = (d) => new Date(d + 'T00:00:00').toLocaleDateString('pt-BR')
+const fmtDate = formatDate
 
 /**
  * Protocolos de quimioterapia do pet (RF-04).

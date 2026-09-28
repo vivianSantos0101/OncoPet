@@ -92,6 +92,13 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
+### Testes (frontend)
+
+```bash
+cd frontend
+npm test
+```
+
 As configurações têm defaults compatíveis com o `docker-compose.yml`. Para mudar, copie `.env.example` para `.env` e exporte as variáveis antes de subir o backend.
 
 ## Fórmula de superfície corporal
