@@ -1,12 +1,18 @@
-"""Configuracoes centrais da aplicacao."""
+"""Configuracoes centrais da aplicacao.
 
-SECRET_KEY = "oncovet-dev-secret-key-change-in-production"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 480  # 8 horas
+Valores lidos de variaveis de ambiente (ver .env.example na raiz).
+Os defaults batem com o docker-compose.yml para desenvolvimento local.
+"""
 
-# PostgreSQL (porta 5433 para nao conflitar)
-DATABASE_URL = "postgresql://oncovet:oncovet123@localhost:5433/oncovet"
+import os
 
-# MongoDB (porta 27018 para nao conflitar)
-MONGODB_URL = "mongodb://localhost:27018"
-MONGODB_DB_NAME = "oncovet_exams"
+SECRET_KEY = os.getenv("SECRET_KEY", "oncovet-dev-secret-key-change-in-production")
+ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "480"))  # 8 horas
+
+# Banco relacional principal (porta 5433 para nao conflitar com instalacao local)
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://oncovet:oncovet123@localhost:5433/oncovet")
+
+# MongoDB - historico / exames (porta 27018 para nao conflitar)
+MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27018")
+MONGODB_DB_NAME = os.getenv("MONGODB_DB_NAME", "oncovet_exams")
