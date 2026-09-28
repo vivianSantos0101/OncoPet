@@ -3,18 +3,20 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import api from '../api'
 import PetAgenda from './PetAgenda'
 import FileUpload from './FileUpload'
+import ProtocolPanel from './ProtocolPanel'
 
 function PetDetail({ pet, onUpdated }) {
   const [sessions, setSessions] = useState([])
   const [records, setRecords] = useState([])
   const [documents, setDocuments] = useState([])
   const [chartData, setChartData] = useState(null)
+  const [protocols, setProtocols] = useState([])
   const [subTab, setSubTab] = useState('dashboard')
 
   // Session form
   const [sessionForm, setSessionForm] = useState({
     date: new Date().toISOString().split('T')[0],
-    session_type: 'quimioterapia', drug_name: '',
+    protocol_id: '', session_type: 'quimioterapia', drug_name: '',
     dose_mg_m2: '', weight_at_session: String(pet.weight), notes: '',
   })
   // Document form
@@ -28,13 +30,14 @@ function PetDetail({ pet, onUpdated }) {
 
   const loadAll = async () => {
     try {
-      const [s, r, d, c] = await Promise.all([
+      const [s, r, d, c, p] = await Promise.all([
         api.get(`/sessions/pet/${pet.id}`),
         api.get(`/records/pet/${pet.id}`),
         api.get(`/documents/pet/${pet.id}`),
         api.get(`/pets/${pet.id}/chart`),
+        api.get(`/protocols/pet/${pet.id}`),
       ])
-      setSessions(s.data); setRecords(r.data); setDocuments(d.data); setChartData(c.data)
+      setSessions(s.data); setRecords(r.data); setDocuments(d.data); setChartData(c.data); setProtocols(p.data)
     } catch (err) { console.error('Erro ao carregar dados:', err) }
   }
 
@@ -43,6 +46,7 @@ function PetDetail({ pet, onUpdated }) {
     try {
       await api.post('/sessions/', {
         pet_id: pet.id,
+        protocol_id: sessionForm.protocol_id ? parseInt(sessionForm.protocol_id) : null,
         date: sessionForm.date,
         session_type: sessionForm.session_type,
         drug_name: sessionForm.drug_name || null,
@@ -51,13 +55,27 @@ function PetDetail({ pet, onUpdated }) {
         notes: sessionForm.notes || null,
       })
       setSuccess('Sessao registrada!'); setTimeout(() => setSuccess(''), 3000)
-      setSessionForm({ ...sessionForm, drug_name: '', dose_mg_m2: '', notes: '' })
+      setSessionForm({ ...sessionForm, protocol_id: '', drug_name: '', dose_mg_m2: '', notes: '' })
       loadAll(); onUpdated()
     } catch (err) {
       const detail = err.response?.data?.detail
       setError(typeof detail === 'string' ? detail : JSON.stringify(detail) || 'Erro')
     }
   }
+
+  // Ao escolher um protocolo, pre-preenche medicamento e dose (vet pode ajustar)
+  const handleProtocolSelect = (protocolId) => {
+    const protocol = protocols.find(p => String(p.id) === protocolId)
+    setSessionForm({
+      ...sessionForm,
+      protocol_id: protocolId,
+      session_type: protocol ? 'quimioterapia' : sessionForm.session_type,
+      drug_name: protocol?.drug_name || sessionForm.drug_name,
+      dose_mg_m2: protocol?.dose_mg_m2 ? String(protocol.dose_mg_m2) : sessionForm.dose_mg_m2,
+    })
+  }
+
+  const activeProtocols = protocols.filter(p => p.status === 'ativo')
 
   const handleDocSubmit = async (e) => {
     e.preventDefault(); setError('')
@@ -107,7 +125,7 @@ function PetDetail({ pet, onUpdated }) {
 
       {/* Sub tabs */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
-        {['dashboard', 'sessao', 'registros', 'documentos', 'agenda'].map(t => (
+        {['dashboard', 'protocolos', 'sessao', 'registros', 'documentos', 'agenda'].map(t => (
           <button key={t} className={subTab === t ? 'primary' : 'outline'} onClick={() => setSubTab(t)} style={{ textTransform: 'capitalize' }}>
             {t}
           </button>
@@ -175,11 +193,25 @@ function PetDetail({ pet, onUpdated }) {
         </div>
       )}
 
+      {/* Protocolos */}
+      {subTab === 'protocolos' && (
+        <ProtocolPanel pet={pet} canManage={true} onChanged={loadAll} />
+      )}
+
       {/* Nova sessao */}
       {subTab === 'sessao' && (
         <div className="card">
           <h4 style={{ marginBottom: 20 }}>Registrar sessao</h4>
           <form onSubmit={handleSessionSubmit}>
+            <label>Protocolo</label>
+            <select value={sessionForm.protocol_id} onChange={e => handleProtocolSelect(e.target.value)}>
+              <option value="">-- Sessao avulsa (sem protocolo) --</option>
+              {activeProtocols.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.name} - sessao {p.executed_sessions + 1} de {p.planned_sessions}
+                </option>
+              ))}
+            </select>
             <div className="grid-3">
               <div><label>Data</label><input type="date" value={sessionForm.date} onChange={e => setSessionForm({...sessionForm, date: e.target.value})} required /></div>
               <div><label>Tipo</label>
