@@ -219,11 +219,11 @@ function PetDetail({ pet, onUpdated }) {
                   <option value="imunoterapia">Imunoterapia</option>
                 </select>
               </div>
-              <div><label>Peso no dia (kg)</label><input type="number" step="0.1" value={sessionForm.weight_at_session} onChange={e => setSessionForm({...sessionForm, weight_at_session: e.target.value})} required /></div>
+              <div><label>Peso no dia (kg)</label><input type="number" step="0.1" min="0.1" max="150" value={sessionForm.weight_at_session} onChange={e => setSessionForm({...sessionForm, weight_at_session: e.target.value})} required /></div>
             </div>
             <div className="grid-2">
               <div><label>Medicamento</label><input value={sessionForm.drug_name} onChange={e => setSessionForm({...sessionForm, drug_name: e.target.value})} placeholder="Ex: Doxorrubicina" /></div>
-              <div><label>Dose (mg/m2)</label><input type="number" step="0.01" value={sessionForm.dose_mg_m2} onChange={e => setSessionForm({...sessionForm, dose_mg_m2: e.target.value})} /></div>
+              <div><label>Dose (mg/m2)</label><input type="number" step="0.01" min="0.01" value={sessionForm.dose_mg_m2} onChange={e => setSessionForm({...sessionForm, dose_mg_m2: e.target.value})} /></div>
             </div>
             <label>Observacoes</label>
             <textarea value={sessionForm.notes} onChange={e => setSessionForm({...sessionForm, notes: e.target.value})} rows={3} />

@@ -132,11 +132,11 @@ function VetDashboard({ user, onLogout }) {
                   {currentBreeds.map(b => <option key={b} value={b}>{b}</option>)}
                 </select>
               </div>
-              <div><label>Peso (kg)</label><input type="number" step="0.1" value={petForm.weight} onChange={e => setPetForm({...petForm, weight: e.target.value})} required /></div>
+              <div><label>Peso (kg)</label><input type="number" step="0.1" min="0.1" max="150" value={petForm.weight} onChange={e => setPetForm({...petForm, weight: e.target.value})} required /></div>
             </div>
             <div className="grid-3">
-              <div><label>Idade (anos)</label><input type="number" value={petForm.age_years} onChange={e => setPetForm({...petForm, age_years: e.target.value})} /></div>
-              <div><label>Idade (meses)</label><input type="number" value={petForm.age_months} onChange={e => setPetForm({...petForm, age_months: e.target.value})} /></div>
+              <div><label>Idade (anos)</label><input type="number" min="0" max="40" value={petForm.age_years} onChange={e => setPetForm({...petForm, age_years: e.target.value})} /></div>
+              <div><label>Idade (meses)</label><input type="number" min="0" max="11" value={petForm.age_months} onChange={e => setPetForm({...petForm, age_months: e.target.value})} /></div>
               <div><label>Tipo de Cancer</label><input value={petForm.cancer_type} onChange={e => setPetForm({...petForm, cancer_type: e.target.value})} /></div>
             </div>
             <div className="grid-3">
