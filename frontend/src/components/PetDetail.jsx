@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import api from '../api'
+import api, { getErrorMessage } from '../api'
 import PetAgenda from './PetAgenda'
 import FileUpload from './FileUpload'
 import ProtocolPanel from './ProtocolPanel'
@@ -58,8 +58,7 @@ function PetDetail({ pet, onUpdated }) {
       setSessionForm({ ...sessionForm, protocol_id: '', drug_name: '', dose_mg_m2: '', notes: '' })
       loadAll(); onUpdated()
     } catch (err) {
-      const detail = err.response?.data?.detail
-      setError(typeof detail === 'string' ? detail : JSON.stringify(detail) || 'Erro')
+      setError(getErrorMessage(err))
     }
   }
 
@@ -94,8 +93,7 @@ function PetDetail({ pet, onUpdated }) {
       setDocForm({ title: '', doc_type: 'exame_sangue', file_url: '', date: '', notes: '' })
       loadAll()
     } catch (err) {
-      const detail = err.response?.data?.detail
-      setError(typeof detail === 'string' ? detail : JSON.stringify(detail) || 'Erro ao salvar')
+      setError(getErrorMessage(err, 'Erro ao salvar'))
     }
   }
 

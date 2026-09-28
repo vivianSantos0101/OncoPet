@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import api from '../api'
+import api, { getErrorMessage } from '../api'
 
 const STATUS_LABEL = { ativo: 'Ativo', concluido: 'Concluido', suspenso: 'Suspenso' }
 const STATUS_BADGE = { ativo: 'badge-mint', concluido: 'badge-mint', suspenso: 'badge-pink' }
@@ -32,8 +32,7 @@ function ProtocolPanel({ pet, canManage = false, onChanged }) {
   }
 
   const showError = (err) => {
-    const detail = err.response?.data?.detail
-    setError(typeof detail === 'string' ? detail : 'Verifique os campos do protocolo')
+    setError(getErrorMessage(err, 'Verifique os campos do protocolo'))
   }
 
   const handleSubmit = async (e) => {

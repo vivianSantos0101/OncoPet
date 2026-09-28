@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import api from '../api'
+import api, { getErrorMessage } from '../api'
 import Notifications from '../components/Notifications'
 import PetAgenda from '../components/PetAgenda'
 import ProtocolPanel from '../components/ProtocolPanel'
@@ -71,7 +71,7 @@ function TutorDashboard({ user, onLogout }) {
       setTimeout(() => setSuccess(''), 3000)
       loadPets()
     } catch (err) {
-      setError(err.response?.data?.detail || 'Erro')
+      setError(getErrorMessage(err))
     }
   }
 
@@ -95,7 +95,7 @@ function TutorDashboard({ user, onLogout }) {
       loadRecords(selectedPet.id)
       loadPets()
     } catch (err) {
-      setError(err.response?.data?.detail || 'Erro')
+      setError(getErrorMessage(err))
     }
   }
 

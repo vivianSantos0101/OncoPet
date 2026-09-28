@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import api from '../api'
+import api, { getErrorMessage } from '../api'
 import PetDetail from '../components/PetDetail'
 
 function VetDashboard({ user, onLogout }) {
@@ -50,7 +50,7 @@ function VetDashboard({ user, onLogout }) {
       setPetForm({ name: '', species: 'cao', breed: '', weight: '', age_years: '', age_months: '', cancer_type: '', treatment_start_date: '', tutor_id: '', clinic_id: '' })
       setSuccess('Paciente cadastrado!'); setTimeout(() => setSuccess(''), 3000)
       loadAll()
-    } catch (err) { setError(err.response?.data?.detail || 'Erro') }
+    } catch (err) { setError(getErrorMessage(err)) }
   }
 
   const handleClinicSubmit = async (e) => {
@@ -60,7 +60,7 @@ function VetDashboard({ user, onLogout }) {
       setClinicForm({ name: '', address: '', phone: '' })
       setSuccess('Clinica cadastrada!'); setTimeout(() => setSuccess(''), 3000)
       loadAll()
-    } catch (err) { setError(err.response?.data?.detail || 'Erro') }
+    } catch (err) { setError(getErrorMessage(err)) }
   }
 
   return (
