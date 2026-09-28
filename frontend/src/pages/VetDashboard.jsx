@@ -4,6 +4,9 @@ import { useLocation, useNavigate, matchPath, Navigate } from 'react-router-dom'
 import { PawPrint, CirclePlus, Building2, ClipboardList } from 'lucide-react'
 import PetDetail, { PET_TABS } from '../components/PetDetail'
 import AppHeader from '../components/AppHeader'
+import PetAvatar from '../components/PetAvatar'
+import PhotoField from '../components/PhotoField'
+import { uploadPetPhoto } from '../image'
 
 /**
  * Rotas do veterinario:
@@ -32,6 +35,7 @@ function VetDashboard({ user, onLogout }) {
   const [clinics, setClinics] = useState([])
   const [loaded, setLoaded] = useState(false)
   const [lastPetId, setLastPetId] = useState(null)
+  const [photoFile, setPhotoFile] = useState(null)
   const [breeds, setBreeds] = useState({ dogs: [], cats: [] })
 
   // Forms
@@ -92,7 +96,7 @@ function VetDashboard({ user, onLogout }) {
   const handlePetSubmit = async (e) => {
     e.preventDefault(); setError('')
     try {
-      await api.post('/pets/', {
+      const res = await api.post('/pets/', {
         ...petForm,
         weight: parseFloat(petForm.weight),
         age_years: petForm.age_years ? parseInt(petForm.age_years) : null,
@@ -101,6 +105,15 @@ function VetDashboard({ user, onLogout }) {
         clinic_id: petForm.clinic_id ? parseInt(petForm.clinic_id) : null,
         treatment_start_date: petForm.treatment_start_date || null,
       })
+      // Foto e opcional: se falhar, o pet ja foi cadastrado e so avisamos
+      if (photoFile) {
+        try {
+          await uploadPetPhoto(api, res.data.id, photoFile)
+        } catch (photoErr) {
+          setError(`Cadastrado, mas a foto nao foi enviada: ${photoErr.response ? getErrorMessage(photoErr) : photoErr.message}`)
+        }
+        setPhotoFile(null)
+      }
       setPetForm({ name: '', species: 'cao', breed: '', weight: '', age_years: '', age_months: '', cancer_type: '', treatment_start_date: '', tutor_id: '', clinic_id: '' })
       setSuccess('Paciente cadastrado!'); setTimeout(() => setSuccess(''), 3000)
       loadAll()
@@ -153,7 +166,7 @@ function VetDashboard({ user, onLogout }) {
             pets.map(pet => (
               <div key={pet.id} className={`pet-card ${lastPetId === pet.id ? 'selected' : ''}`}
                 onClick={() => goToPetTab(pet.id, 'dashboard')}>
-                <div className="pet-avatar">{pet.name.charAt(0).toUpperCase()}</div>
+                <PetAvatar pet={pet} />
                 <div style={{ flex: 1 }}>
                   <strong style={{ fontSize: 16 }}>{pet.name}</strong>
                   <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>
@@ -174,6 +187,7 @@ function VetDashboard({ user, onLogout }) {
         <div className="card">
           <h3 style={{ marginBottom: 24 }}>Cadastrar paciente</h3>
           <form onSubmit={handlePetSubmit}>
+            <PhotoField file={photoFile} onChange={setPhotoFile} />
             <div className="grid-2">
               <div><label>Nome</label><input value={petForm.name} onChange={e => setPetForm({...petForm, name: e.target.value})} required /></div>
               <div><label>Especie</label>

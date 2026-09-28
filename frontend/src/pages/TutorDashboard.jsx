@@ -9,6 +9,9 @@ import ProtocolPanel from '../components/ProtocolPanel'
 import SymptomPicker from '../components/SymptomPicker'
 import PainScale from '../components/PainScale'
 import DailyLogList from '../components/DailyLogList'
+import PetAvatar from '../components/PetAvatar'
+import PhotoField from '../components/PhotoField'
+import { uploadPetPhoto } from '../image'
 import { todayISO } from '../dates'
 
 const PET_TABS = ['diario', 'tratamento', 'agenda']
@@ -35,6 +38,7 @@ export function parseTutorRoute(pathname) {
 function TutorDashboard({ user, onLogout }) {
   const [pets, setPets] = useState([])
   const [records, setRecords] = useState([])
+  const [photoFile, setPhotoFile] = useState(null)
   const [loaded, setLoaded] = useState(false)
   const [lastPetId, setLastPetId] = useState(null)
   const [breeds, setBreeds] = useState({ dogs: [], cats: [] })
@@ -112,7 +116,7 @@ function TutorDashboard({ user, onLogout }) {
     e.preventDefault()
     setError('')
     try {
-      await api.post('/pets/', {
+      const res = await api.post('/pets/', {
         ...petForm,
         weight: parseFloat(petForm.weight),
         age_years: petForm.age_years ? parseInt(petForm.age_years) : null,
@@ -121,6 +125,15 @@ function TutorDashboard({ user, onLogout }) {
         clinic_id: petForm.clinic_id ? parseInt(petForm.clinic_id) : null,
         treatment_start_date: petForm.treatment_start_date || null,
       })
+      // Foto e opcional: se falhar, o pet ja foi cadastrado e so avisamos
+      if (photoFile) {
+        try {
+          await uploadPetPhoto(api, res.data.id, photoFile)
+        } catch (photoErr) {
+          setError(`Cadastrado, mas a foto nao foi enviada: ${photoErr.response ? getErrorMessage(photoErr) : photoErr.message}`)
+        }
+        setPhotoFile(null)
+      }
       setPetForm({ name: '', species: 'cao', breed: '', weight: '', age_years: '', age_months: '', cancer_type: '', treatment_start_date: '', vet_id: '', clinic_id: '' })
       setSuccess('Animal cadastrado!')
       setTimeout(() => setSuccess(''), 3000)
@@ -195,7 +208,7 @@ function TutorDashboard({ user, onLogout }) {
           ) : (
             pets.map(pet => (
               <div key={pet.id} className={`pet-card ${lastPetId === pet.id ? 'selected' : ''}`} onClick={() => selectPet(pet)}>
-                <div className="pet-avatar">{pet.name.charAt(0).toUpperCase()}</div>
+                <PetAvatar pet={pet} />
                 <div style={{ flex: 1 }}>
                   <strong style={{ fontSize: 16 }}>{pet.name}</strong>
                   <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>
@@ -215,6 +228,7 @@ function TutorDashboard({ user, onLogout }) {
         <div className="card">
           <h3 style={{ marginBottom: 24 }}>Cadastrar novo animal</h3>
           <form onSubmit={handlePetSubmit}>
+            <PhotoField file={photoFile} onChange={setPhotoFile} />
             <div className="grid-2">
               <div><label>Nome</label><input value={petForm.name} onChange={e => setPetForm({...petForm, name: e.target.value})} required /></div>
               <div><label>Especie</label>
@@ -261,9 +275,7 @@ function TutorDashboard({ user, onLogout }) {
       {activeTab === 'diario' && selectedPet && (
         <div>
           <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div className="pet-avatar" style={{ width: 56, height: 56, fontSize: 22 }}>
-              {selectedPet.name.charAt(0).toUpperCase()}
-            </div>
+            <PetAvatar pet={selectedPet} size={64} radius={20} editable onChanged={loadPets} onError={setError} />
             <div>
               <h3>{selectedPet.name}</h3>
               <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>

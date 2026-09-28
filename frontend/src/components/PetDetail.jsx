@@ -6,6 +6,7 @@ import PetAgenda from './PetAgenda'
 import FileUpload from './FileUpload'
 import ProtocolPanel from './ProtocolPanel'
 import DailyLogList from './DailyLogList'
+import PetAvatar from './PetAvatar'
 import { formatDate, todayISO } from '../dates'
 
 export const PET_TABS = ['dashboard', 'protocolos', 'sessao', 'registros', 'documentos', 'agenda']
@@ -111,9 +112,7 @@ function PetDetail({ pet, onUpdated, subTab = 'dashboard', onSubTabChange }) {
     <div>
       {/* Pet header */}
       <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-        <div className="pet-avatar" style={{ width: 64, height: 64, fontSize: 26, borderRadius: 20 }}>
-          {pet.name.charAt(0).toUpperCase()}
-        </div>
+        <PetAvatar pet={pet} size={64} radius={20} editable onChanged={onUpdated} onError={setError} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <h2 style={{ fontSize: 28 }}>{pet.name}</h2>
           <p style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>
