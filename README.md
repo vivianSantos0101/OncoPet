@@ -29,6 +29,7 @@ OncoPet/
 │   │   ├── breeds.py
 │   │   └── routers/         # auth, clinics, tutors, vets, pets, protocols, sessions,
 │   │                        # records, documents, reminders, exams (Mongo), uploads
+│   ├── scripts/             # seed_demo.py (dados de demonstração)
 │   ├── tests/
 │   └── requirements.txt
 ├── frontend/
@@ -58,6 +59,28 @@ cd frontend
 npm install
 npm run dev                          # http://localhost:5173
 ```
+
+### Dados de demonstração
+
+Com o backend rodando, popule o banco com pacientes, protocolos, sessões,
+diário do tutor, lembretes e laudos fictícios:
+
+```bash
+cd backend
+source .venv/bin/activate
+python scripts/seed_demo.py
+```
+
+Logins criados (senha `oncopet123` para todos):
+
+| Perfil | Usuários |
+|---|---|
+| Veterinário | `dra_ana`, `dr_marcos` |
+| Tutor | `joao`, `mariana`, `carla`, `pedro`, `rafael` |
+
+As datas são geradas a partir do dia em que o script roda. Para recomeçar do
+zero: `docker compose down -v && docker compose up -d`, reinicie o backend e
+rode o script de novo.
 
 ### Testes (backend)
 
