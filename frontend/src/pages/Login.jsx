@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import api from '../api'
+import api, { getErrorMessage } from '../api'
 
 function Login({ onLogin }) {
   const [isRegister, setIsRegister] = useState(false)
@@ -31,7 +31,7 @@ function Login({ onLogin }) {
         onLogin(res.data.access_token, res.data.user)
       }
     } catch (err) {
-      setError(err.response?.data?.detail || 'Erro de conexao')
+      setError(getErrorMessage(err, 'Erro de conexao'))
     }
   }
 

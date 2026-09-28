@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import api from '../api'
+import api, { getErrorMessage } from '../api'
 import PetDetail from '../components/PetDetail'
 
 function VetDashboard({ user, onLogout }) {
@@ -50,7 +50,7 @@ function VetDashboard({ user, onLogout }) {
       setPetForm({ name: '', species: 'cao', breed: '', weight: '', age_years: '', age_months: '', cancer_type: '', treatment_start_date: '', tutor_id: '', clinic_id: '' })
       setSuccess('Paciente cadastrado!'); setTimeout(() => setSuccess(''), 3000)
       loadAll()
-    } catch (err) { setError(err.response?.data?.detail || 'Erro') }
+    } catch (err) { setError(getErrorMessage(err)) }
   }
 
   const handleClinicSubmit = async (e) => {
@@ -60,7 +60,7 @@ function VetDashboard({ user, onLogout }) {
       setClinicForm({ name: '', address: '', phone: '' })
       setSuccess('Clinica cadastrada!'); setTimeout(() => setSuccess(''), 3000)
       loadAll()
-    } catch (err) { setError(err.response?.data?.detail || 'Erro') }
+    } catch (err) { setError(getErrorMessage(err)) }
   }
 
   return (
@@ -132,11 +132,11 @@ function VetDashboard({ user, onLogout }) {
                   {currentBreeds.map(b => <option key={b} value={b}>{b}</option>)}
                 </select>
               </div>
-              <div><label>Peso (kg)</label><input type="number" step="0.1" value={petForm.weight} onChange={e => setPetForm({...petForm, weight: e.target.value})} required /></div>
+              <div><label>Peso (kg)</label><input type="number" step="0.1" min="0.1" max="150" value={petForm.weight} onChange={e => setPetForm({...petForm, weight: e.target.value})} required /></div>
             </div>
             <div className="grid-3">
-              <div><label>Idade (anos)</label><input type="number" value={petForm.age_years} onChange={e => setPetForm({...petForm, age_years: e.target.value})} /></div>
-              <div><label>Idade (meses)</label><input type="number" value={petForm.age_months} onChange={e => setPetForm({...petForm, age_months: e.target.value})} /></div>
+              <div><label>Idade (anos)</label><input type="number" min="0" max="40" value={petForm.age_years} onChange={e => setPetForm({...petForm, age_years: e.target.value})} /></div>
+              <div><label>Idade (meses)</label><input type="number" min="0" max="11" value={petForm.age_months} onChange={e => setPetForm({...petForm, age_months: e.target.value})} /></div>
               <div><label>Tipo de Cancer</label><input value={petForm.cancer_type} onChange={e => setPetForm({...petForm, cancer_type: e.target.value})} /></div>
             </div>
             <div className="grid-3">

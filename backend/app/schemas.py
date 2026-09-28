@@ -54,13 +54,19 @@ class ClinicResponse(ClinicCreate):
 
 # ─── Pet ──────────────────────────────────────────────
 
+# Limites de validacao (idade/peso nao podem ser negativos)
+MAX_AGE_YEARS = 40
+MAX_WEIGHT_KG = 150
+
+
+
 class PetCreate(BaseModel):
     name: str
     species: str
     breed: str
-    weight: float
-    age_years: Optional[int] = None
-    age_months: Optional[int] = None
+    weight: float = Field(gt=0, le=MAX_WEIGHT_KG)
+    age_years: Optional[int] = Field(default=None, ge=0, le=MAX_AGE_YEARS)
+    age_months: Optional[int] = Field(default=None, ge=0, le=11)
     photo_url: Optional[str] = None
     cancer_type: Optional[str] = None
     treatment_start_date: Optional[date] = None
@@ -73,9 +79,9 @@ class PetUpdate(BaseModel):
     name: Optional[str] = None
     species: Optional[str] = None
     breed: Optional[str] = None
-    weight: Optional[float] = None
-    age_years: Optional[int] = None
-    age_months: Optional[int] = None
+    weight: Optional[float] = Field(default=None, gt=0, le=MAX_WEIGHT_KG)
+    age_years: Optional[int] = Field(default=None, ge=0, le=MAX_AGE_YEARS)
+    age_months: Optional[int] = Field(default=None, ge=0, le=11)
     photo_url: Optional[str] = None
     cancer_type: Optional[str] = None
     treatment_start_date: Optional[date] = None
@@ -159,8 +165,8 @@ class SessionCreate(BaseModel):
     date: date
     session_type: str = "quimioterapia"
     drug_name: Optional[str] = None
-    dose_mg_m2: Optional[float] = None
-    weight_at_session: float
+    dose_mg_m2: Optional[float] = Field(default=None, gt=0)
+    weight_at_session: float = Field(gt=0, le=MAX_WEIGHT_KG)
     notes: Optional[str] = None
 
 
@@ -185,7 +191,7 @@ class SessionResponse(BaseModel):
 class RecordCreate(BaseModel):
     pet_id: int
     date: date
-    weight: Optional[float] = None
+    weight: Optional[float] = Field(default=None, gt=0, le=MAX_WEIGHT_KG)
     symptoms: Optional[str] = None
     general_status: Optional[str] = None
     appetite: Optional[str] = None
@@ -237,9 +243,9 @@ class DocumentResponse(BaseModel):
 # ─── Dose Calculator ─────────────────────────────────
 
 class DoseCalculation(BaseModel):
-    weight: float
+    weight: float = Field(gt=0, le=MAX_WEIGHT_KG)
     species: str
-    dose_mg_m2: float
+    dose_mg_m2: float = Field(gt=0)
 
 
 class DoseResult(BaseModel):

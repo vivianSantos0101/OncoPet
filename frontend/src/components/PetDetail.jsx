@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import api from '../api'
+import api, { getErrorMessage } from '../api'
 import PetAgenda from './PetAgenda'
 import FileUpload from './FileUpload'
 import ProtocolPanel from './ProtocolPanel'
@@ -58,8 +58,7 @@ function PetDetail({ pet, onUpdated }) {
       setSessionForm({ ...sessionForm, protocol_id: '', drug_name: '', dose_mg_m2: '', notes: '' })
       loadAll(); onUpdated()
     } catch (err) {
-      const detail = err.response?.data?.detail
-      setError(typeof detail === 'string' ? detail : JSON.stringify(detail) || 'Erro')
+      setError(getErrorMessage(err))
     }
   }
 
@@ -94,8 +93,7 @@ function PetDetail({ pet, onUpdated }) {
       setDocForm({ title: '', doc_type: 'exame_sangue', file_url: '', date: '', notes: '' })
       loadAll()
     } catch (err) {
-      const detail = err.response?.data?.detail
-      setError(typeof detail === 'string' ? detail : JSON.stringify(detail) || 'Erro ao salvar')
+      setError(getErrorMessage(err, 'Erro ao salvar'))
     }
   }
 
@@ -221,11 +219,11 @@ function PetDetail({ pet, onUpdated }) {
                   <option value="imunoterapia">Imunoterapia</option>
                 </select>
               </div>
-              <div><label>Peso no dia (kg)</label><input type="number" step="0.1" value={sessionForm.weight_at_session} onChange={e => setSessionForm({...sessionForm, weight_at_session: e.target.value})} required /></div>
+              <div><label>Peso no dia (kg)</label><input type="number" step="0.1" min="0.1" max="150" value={sessionForm.weight_at_session} onChange={e => setSessionForm({...sessionForm, weight_at_session: e.target.value})} required /></div>
             </div>
             <div className="grid-2">
               <div><label>Medicamento</label><input value={sessionForm.drug_name} onChange={e => setSessionForm({...sessionForm, drug_name: e.target.value})} placeholder="Ex: Doxorrubicina" /></div>
-              <div><label>Dose (mg/m2)</label><input type="number" step="0.01" value={sessionForm.dose_mg_m2} onChange={e => setSessionForm({...sessionForm, dose_mg_m2: e.target.value})} /></div>
+              <div><label>Dose (mg/m2)</label><input type="number" step="0.01" min="0.01" value={sessionForm.dose_mg_m2} onChange={e => setSessionForm({...sessionForm, dose_mg_m2: e.target.value})} /></div>
             </div>
             <label>Observacoes</label>
             <textarea value={sessionForm.notes} onChange={e => setSessionForm({...sessionForm, notes: e.target.value})} rows={3} />
