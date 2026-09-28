@@ -1,4 +1,4 @@
-"""Entry point - OncoVet API v3."""
+"""Entry point - OncoPet API v3."""
 
 from contextlib import asynccontextmanager
 
@@ -20,7 +20,7 @@ async def lifespan(app: FastAPI):
     await close_mongodb()
 
 
-app = FastAPI(title="OncoVet API", version="3.1.0", lifespan=lifespan)
+app = FastAPI(title="OncoPet API", version="3.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -45,4 +45,4 @@ app.include_router(uploads.router)
 
 @app.get("/")
 def root():
-    return {"message": "OncoVet API v3.1", "docs": "/docs"}
+    return {"message": "OncoPet API v3.1", "docs": "/docs"}
