@@ -1,4 +1,4 @@
-# OncoVet 🐾
+# OncoPet 🐾
 
 Sistema de acompanhamento de quimioterapia veterinária (oncologia animal), com visão do veterinário e do tutor.
 
@@ -9,13 +9,13 @@ Sistema de acompanhamento de quimioterapia veterinária (oncologia animal), com 
 - **Auth:** JWT com papéis `vet` e `tutor`
 
 > A especificação técnica alvo (MySQL, TypeScript, NumPy, dashboard paliativo, PDF) está em
-> [`docs/Requisitos_Tecnicos_OncoVet.pdf`](docs/Requisitos_Tecnicos_OncoVet.pdf).
+> [`docs/Requisitos_Tecnicos_OncoPet.pdf`](docs/Requisitos_Tecnicos_OncoPet.pdf).
 > O que falta está em [`docs/ANALISE_REQUISITOS.md`](docs/ANALISE_REQUISITOS.md).
 
 ## Estrutura
 
 ```
-OncoVet/
+OncoPet/
 ├── backend/
 │   ├── app/
 │   │   ├── main.py          # app FastAPI + registro de rotas

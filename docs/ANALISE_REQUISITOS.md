@@ -1,6 +1,6 @@
 # Análise: especificação × código atual
 
-Referência: [`Requisitos_Tecnicos_OncoVet.pdf`](Requisitos_Tecnicos_OncoVet.pdf).
+Referência: [`Requisitos_Tecnicos_OncoPet.pdf`](Requisitos_Tecnicos_OncoPet.pdf).
 Legenda: ✅ atendido · 🟡 parcial · ❌ não iniciado
 
 ## Arquitetura
