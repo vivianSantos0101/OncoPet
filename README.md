@@ -82,9 +82,19 @@ As datas são geradas a partir do dia em que o script roda. Para recomeçar do
 zero: `docker compose down -v && docker compose up -d`, reinicie o backend e
 rode o script de novo.
 
+### Migrar o diário antigo para o MongoDB
+
+Se você tem registros do tutor salvos antes do RF-02/03 (tabela `pet_records`),
+copie-os para o MongoDB (não apaga nada e pode rodar de novo sem duplicar):
+
+```bash
+cd backend && source .venv/bin/activate
+python scripts/migrate_records_to_mongo.py
+```
+
 ### Testes (backend)
 
-Rodam com SQLite, sem precisar do Docker:
+Rodam com SQLite e MongoDB em memória, sem precisar do Docker:
 
 ```bash
 cd backend
