@@ -61,6 +61,7 @@ class Pet(Base):
     vet = relationship("User", foreign_keys=[vet_id])
     clinic = relationship("Clinic")
     sessions = relationship("ChemoSession", back_populates="pet", cascade="all, delete-orphan")
+    protocols = relationship("ChemoProtocol", back_populates="pet", cascade="all, delete-orphan")
     records = relationship("PetRecord", back_populates="pet", cascade="all, delete-orphan")
     documents = relationship("Document", back_populates="pet", cascade="all, delete-orphan")
     reminders = relationship("Reminder", back_populates="pet", cascade="all, delete-orphan")
@@ -72,12 +73,38 @@ class Pet(Base):
         return round(0.101 * (self.weight ** 0.734), 4)
 
 
+class ChemoProtocol(Base):
+    """Protocolo de quimioterapia (RF-04) - plano definido pelo VET.
+
+    As sessoes executadas sao as ChemoSession vinculadas via protocol_id;
+    o progresso e planned_sessions x len(sessions).
+    """
+    __tablename__ = "chemo_protocols"
+
+    id = Column(Integer, primary_key=True, index=True)
+    pet_id = Column(Integer, ForeignKey("pets.id"), nullable=False, index=True)
+    name = Column(String(150), nullable=False)  # ex: CHOP, Doxorrubicina solo
+    drug_name = Column(String(150), nullable=True)
+    dose_mg_m2 = Column(Float, nullable=True)
+    planned_sessions = Column(Integer, nullable=False)
+    interval_days = Column(Integer, nullable=True)  # intervalo previsto entre sessoes
+    start_date = Column(Date, nullable=False)
+    status = Column(String(20), nullable=False, default="ativo")  # ativo, concluido, suspenso
+    notes = Column(Text, nullable=True)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    pet = relationship("Pet", back_populates="protocols")
+    sessions = relationship("ChemoSession", back_populates="protocol", order_by="ChemoSession.date")
+
+
 class ChemoSession(Base):
     """Sessao de quimioterapia/radioterapia - registrada pelo VET."""
     __tablename__ = "chemo_sessions"
 
     id = Column(Integer, primary_key=True, index=True)
     pet_id = Column(Integer, ForeignKey("pets.id"), nullable=False)
+    protocol_id = Column(Integer, ForeignKey("chemo_protocols.id"), nullable=True, index=True)
     date = Column(Date, nullable=False)
     session_type = Column(String(50), nullable=False, default="quimioterapia")  # quimioterapia, radioterapia
     drug_name = Column(String(150), nullable=True)
@@ -88,6 +115,7 @@ class ChemoSession(Base):
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
 
     pet = relationship("Pet", back_populates="sessions")
+    protocol = relationship("ChemoProtocol", back_populates="sessions")
 
 
 class PetRecord(Base):
