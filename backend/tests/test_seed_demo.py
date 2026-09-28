@@ -43,3 +43,20 @@ def test_seed_nao_duplica_dados(client):
     seed(client)
     with pytest.raises(SeedError, match="ja existe"):
         seed(client)
+
+
+def test_seed_grava_diario_no_mongodb_com_dor(client):
+    import asyncio
+    from app import mongodb
+
+    seed(client, today=date(2026, 9, 28))
+
+    async def luna_pain():
+        docs = [d async for d in mongodb.db.daily_logs.find({"pet_id": 2}).sort("date", 1)]
+        return [d["pain_score"] for d in docs]
+
+    pain = asyncio.run(luna_pain())
+    assert len(pain) >= 10
+    assert all(0 <= p <= 10 for p in pain)
+    # osteossarcoma: dor tende a subir ao longo do tratamento
+    assert sum(pain[-3:]) / 3 > sum(pain[:3]) / 3

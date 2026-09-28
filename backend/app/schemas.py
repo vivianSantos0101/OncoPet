@@ -186,13 +186,22 @@ class SessionResponse(BaseModel):
         from_attributes = True
 
 
-# ─── Record (tutor only) ─────────────────────────────
+# ─── Diario do tutor (MongoDB, RF-02/RF-03) ─────────
+
+# Sintomas que o tutor pode marcar; outros vao em texto livre (other_symptoms)
+Symptom = Literal[
+    "vomito", "diarreia", "letargia", "inapetencia",
+    "febre", "tosse", "dispneia", "lesao_pele",
+]
+
 
 class RecordCreate(BaseModel):
     pet_id: int
     date: date
     weight: Optional[float] = Field(default=None, gt=0, le=MAX_WEIGHT_KG)
-    symptoms: Optional[str] = None
+    symptoms: List[Symptom] = Field(default_factory=list)
+    other_symptoms: Optional[str] = None
+    pain_score: Optional[int] = Field(default=None, ge=0, le=10)  # escala de dor 0-10
     general_status: Optional[str] = None
     appetite: Optional[str] = None
     energy_level: Optional[str] = None
@@ -201,19 +210,18 @@ class RecordCreate(BaseModel):
 
 
 class RecordResponse(BaseModel):
-    id: int
+    id: str  # ObjectId do MongoDB
     pet_id: int
     date: date
     weight: Optional[float] = None
-    symptoms: Optional[str] = None
+    symptoms: List[str] = Field(default_factory=list)
+    other_symptoms: Optional[str] = None
+    pain_score: Optional[int] = None
     general_status: Optional[str] = None
     appetite: Optional[str] = None
     energy_level: Optional[str] = None
     photo_url: Optional[str] = None
     notes: Optional[str] = None
-
-    class Config:
-        from_attributes = True
 
 
 # ─── Document (vet only) ─────────────────────────────
