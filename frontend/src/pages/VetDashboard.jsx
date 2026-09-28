@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import api, { getErrorMessage } from '../api'
+import { PawPrint, CirclePlus, Building2, ClipboardList } from 'lucide-react'
 import PetDetail from '../components/PetDetail'
+import AppHeader from '../components/AppHeader'
 
 function VetDashboard({ user, onLogout }) {
   const [pets, setPets] = useState([])
@@ -65,21 +67,22 @@ function VetDashboard({ user, onLogout }) {
 
   return (
     <div className="container">
-      <div className="header">
-        <h1>OncoPet</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span className="role-badge vet">Veterinario</span>
-          <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{user.full_name}</span>
-          <button className="danger" onClick={onLogout} style={{ padding: '8px 16px', fontSize: 12 }}>Sair</button>
-        </div>
-      </div>
+      <AppHeader role="vet" userName={user.full_name} onLogout={onLogout} />
 
-      <div className="nav-tabs">
-        <button className={activeTab === 'pacientes' ? 'active' : ''} onClick={() => setActiveTab('pacientes')}>Pacientes</button>
-        <button className={activeTab === 'cadastro' ? 'active' : ''} onClick={() => setActiveTab('cadastro')}>Novo Paciente</button>
-        <button className={activeTab === 'clinica' ? 'active' : ''} onClick={() => setActiveTab('clinica')}>Clinica</button>
-        <button className={activeTab === 'prontuario' ? 'active' : ''} onClick={() => setActiveTab('prontuario')} disabled={!selectedPet}>Prontuario</button>
-      </div>
+      <nav className="nav-tabs">
+        <button className={activeTab === 'pacientes' ? 'active' : ''} onClick={() => setActiveTab('pacientes')}>
+          <PawPrint /><span className="label-long">Pacientes</span><span className="label-short">Pacientes</span>
+        </button>
+        <button className={activeTab === 'cadastro' ? 'active' : ''} onClick={() => setActiveTab('cadastro')}>
+          <CirclePlus /><span className="label-long">Novo Paciente</span><span className="label-short">Novo</span>
+        </button>
+        <button className={activeTab === 'clinica' ? 'active' : ''} onClick={() => setActiveTab('clinica')}>
+          <Building2 /><span className="label-long">Clinica</span><span className="label-short">Clinica</span>
+        </button>
+        <button className={activeTab === 'prontuario' ? 'active' : ''} onClick={() => setActiveTab('prontuario')} disabled={!selectedPet}>
+          <ClipboardList /><span className="label-long">Prontuario</span><span className="label-short">Prontuario</span>
+        </button>
+      </nav>
 
       {error && <p className="error">{error}</p>}
       {success && <div className="success-msg">{success}</div>}
@@ -96,7 +99,7 @@ function VetDashboard({ user, onLogout }) {
             pets.map(pet => (
               <div key={pet.id} className={`pet-card ${selectedPet?.id === pet.id ? 'selected' : ''}`}
                 onClick={() => { setSelectedPet(pet); setActiveTab('prontuario') }}>
-                <div className="pet-avatar">{pet.species.includes('gato') ? 'G' : 'C'}</div>
+                <div className="pet-avatar">{pet.name.charAt(0).toUpperCase()}</div>
                 <div style={{ flex: 1 }}>
                   <strong style={{ fontSize: 16 }}>{pet.name}</strong>
                   <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>

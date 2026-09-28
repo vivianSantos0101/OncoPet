@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { Syringe, NotebookPen, Scale, CalendarClock } from 'lucide-react'
 import api, { getErrorMessage } from '../api'
 import PetAgenda from './PetAgenda'
 import FileUpload from './FileUpload'
@@ -105,16 +106,16 @@ function PetDetail({ pet, onUpdated }) {
   return (
     <div>
       {/* Pet header */}
-      <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-        <div className="pet-avatar" style={{ width: 64, height: 64, fontSize: 18 }}>
-          {pet.species.includes('gato') ? 'G' : 'C'}
+      <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+        <div className="pet-avatar" style={{ width: 64, height: 64, fontSize: 26, borderRadius: 20 }}>
+          {pet.name.charAt(0).toUpperCase()}
         </div>
-        <div style={{ flex: 1 }}>
-          <h2 style={{ fontSize: 22 }}>{pet.name}</h2>
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-            {pet.breed} - {pet.weight}kg - SC: {pet.body_surface_area} m2
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h2 style={{ fontSize: 28 }}>{pet.name}</h2>
+          <p style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>
+            {pet.breed} · {pet.weight} kg · SC {pet.body_surface_area} m²
           </p>
-          <div style={{ marginTop: 6, display: 'flex', gap: 8 }}>
+          <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {pet.cancer_type && <span className="badge badge-pink">{pet.cancer_type}</span>}
             {pet.treatment_start_date && <span className="badge badge-mint">Inicio: {new Date(pet.treatment_start_date).toLocaleDateString('pt-BR')}</span>}
           </div>
@@ -122,9 +123,9 @@ function PetDetail({ pet, onUpdated }) {
       </div>
 
       {/* Sub tabs */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
+      <div className="subtabs">
         {['dashboard', 'protocolos', 'sessao', 'registros', 'documentos', 'agenda'].map(t => (
-          <button key={t} className={subTab === t ? 'primary' : 'outline'} onClick={() => setSubTab(t)} style={{ textTransform: 'capitalize' }}>
+          <button key={t} className={subTab === t ? 'active' : ''} onClick={() => setSubTab(t)}>
             {t}
           </button>
         ))}
@@ -142,18 +143,22 @@ function PetDetail({ pet, onUpdated }) {
               <div className="stat-card">
                 <div className="stat-value">{chartData.sessions_count}</div>
                 <div className="stat-label">Sessoes</div>
+                <div className="stat-icon"><Syringe size={20} /></div>
               </div>
               <div className="stat-card">
                 <div className="stat-value">{chartData.records_count}</div>
                 <div className="stat-label">Registros do Tutor</div>
+                <div className="stat-icon"><NotebookPen size={20} /></div>
               </div>
               <div className="stat-card">
-                <div className="stat-value">{chartData.last_weight || '-'}kg</div>
+                <div className="stat-value">{chartData.last_weight || '-'} kg</div>
                 <div className="stat-label">Ultimo Peso</div>
+                <div className="stat-icon"><Scale size={20} /></div>
               </div>
               <div className="stat-card">
                 <div className="stat-value">{chartData.treatment_days || '-'}</div>
                 <div className="stat-label">Dias de Tratamento</div>
+                <div className="stat-icon"><CalendarClock size={20} /></div>
               </div>
             </div>
           )}
@@ -163,13 +168,23 @@ function PetDetail({ pet, onUpdated }) {
             <div className="card">
               <h4 style={{ marginBottom: 16 }}>Evolucao de Peso (kg)</h4>
               <ResponsiveContainer width="100%" height={280}>
-                <LineChart data={weightChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                  <XAxis dataKey="date" fontSize={11} />
-                  <YAxis fontSize={11} domain={['auto', 'auto']} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="peso" stroke="#7dd3b4" strokeWidth={3} dot={{ fill: '#7dd3b4', r: 5 }} />
-                </LineChart>
+                <AreaChart data={weightChartData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="pesoFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#12b886" stopOpacity={0.28} />
+                      <stop offset="100%" stopColor="#12b886" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid stroke="#e6eef0" vertical={false} />
+                  <XAxis dataKey="date" fontSize={11} tick={{ fill: '#94a3aa' }} axisLine={false} tickLine={false} />
+                  <YAxis fontSize={11} tick={{ fill: '#94a3aa' }} axisLine={false} tickLine={false} domain={['auto', 'auto']} />
+                  <Tooltip
+                    formatter={(v) => [`${v} kg`, 'Peso']}
+                    contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 8px 24px rgba(16,42,51,.12)', fontSize: 13 }}
+                  />
+                  <Area type="monotone" dataKey="peso" stroke="#12b886" strokeWidth={3} fill="url(#pesoFill)"
+                    dot={{ r: 4, fill: '#fff', stroke: '#12b886', strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                </AreaChart>
               </ResponsiveContainer>
             </div>
           )}

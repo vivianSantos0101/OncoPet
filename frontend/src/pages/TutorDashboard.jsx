@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import api, { getErrorMessage } from '../api'
 import Notifications from '../components/Notifications'
+import { PawPrint, CirclePlus, NotebookPen, Activity, CalendarDays } from 'lucide-react'
 import PetAgenda from '../components/PetAgenda'
+import AppHeader from '../components/AppHeader'
 import ProtocolPanel from '../components/ProtocolPanel'
 
 function TutorDashboard({ user, onLogout }) {
@@ -102,32 +104,25 @@ function TutorDashboard({ user, onLogout }) {
   return (
     <div className="container">
       <Notifications />
-      <div className="header">
-        <h1>OncoPet</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span className="role-badge tutor">Tutor</span>
-          <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{user.full_name}</span>
-          <button className="danger" onClick={onLogout} style={{ padding: '8px 16px', fontSize: 12 }}>Sair</button>
-        </div>
-      </div>
+      <AppHeader role="tutor" userName={user.full_name} onLogout={onLogout} />
 
-      <div className="nav-tabs">
+      <nav className="nav-tabs">
         <button className={activeTab === 'pets' ? 'active' : ''} onClick={() => setActiveTab('pets')}>
-          Meus Animais
+          <PawPrint /><span className="label-long">Meus Animais</span><span className="label-short">Animais</span>
         </button>
         <button className={activeTab === 'novo' ? 'active' : ''} onClick={() => setActiveTab('novo')}>
-          Cadastrar Animal
+          <CirclePlus /><span className="label-long">Cadastrar Animal</span><span className="label-short">Novo</span>
         </button>
         <button className={activeTab === 'diario' ? 'active' : ''} onClick={() => setActiveTab('diario')} disabled={!selectedPet}>
-          Diario
+          <NotebookPen /><span className="label-long">Diario</span><span className="label-short">Diario</span>
         </button>
         <button className={activeTab === 'tratamento' ? 'active' : ''} onClick={() => setActiveTab('tratamento')} disabled={!selectedPet}>
-          Tratamento
+          <Activity /><span className="label-long">Tratamento</span><span className="label-short">Tratamento</span>
         </button>
         <button className={activeTab === 'agenda' ? 'active' : ''} onClick={() => setActiveTab('agenda')} disabled={!selectedPet}>
-          Agenda
+          <CalendarDays /><span className="label-long">Agenda</span><span className="label-short">Agenda</span>
         </button>
-      </div>
+      </nav>
 
       {error && <p className="error">{error}</p>}
       {success && <div className="success-msg">{success}</div>}
@@ -143,7 +138,7 @@ function TutorDashboard({ user, onLogout }) {
           ) : (
             pets.map(pet => (
               <div key={pet.id} className={`pet-card ${selectedPet?.id === pet.id ? 'selected' : ''}`} onClick={() => selectPet(pet)}>
-                <div className="pet-avatar">{pet.species.includes('gato') ? 'G' : 'C'}</div>
+                <div className="pet-avatar">{pet.name.charAt(0).toUpperCase()}</div>
                 <div style={{ flex: 1 }}>
                   <strong style={{ fontSize: 16 }}>{pet.name}</strong>
                   <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>
@@ -209,8 +204,8 @@ function TutorDashboard({ user, onLogout }) {
       {activeTab === 'diario' && selectedPet && (
         <div>
           <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div className="pet-avatar" style={{ width: 60, height: 60, fontSize: 16 }}>
-              {selectedPet.species.includes('gato') ? 'G' : 'C'}
+            <div className="pet-avatar" style={{ width: 56, height: 56, fontSize: 22 }}>
+              {selectedPet.name.charAt(0).toUpperCase()}
             </div>
             <div>
               <h3>{selectedPet.name}</h3>
