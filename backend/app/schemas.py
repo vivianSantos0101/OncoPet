@@ -1,8 +1,8 @@
 """Pydantic schemas v3."""
 
 from datetime import date
-from typing import Optional, List
-from pydantic import BaseModel
+from typing import Optional, List, Literal
+from pydantic import BaseModel, Field
 
 
 # ─── Auth ─────────────────────────────────────────────
@@ -103,6 +103,52 @@ class PetResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ─── Protocolo de quimio (vet only) ──────────────────
+
+ProtocolStatus = Literal["ativo", "concluido", "suspenso"]
+
+
+class ProtocolCreate(BaseModel):
+    pet_id: int
+    name: str
+    drug_name: Optional[str] = None
+    dose_mg_m2: Optional[float] = Field(default=None, gt=0)
+    planned_sessions: int = Field(gt=0)
+    interval_days: Optional[int] = Field(default=None, gt=0)
+    start_date: date
+    notes: Optional[str] = None
+
+
+class ProtocolUpdate(BaseModel):
+    name: Optional[str] = None
+    drug_name: Optional[str] = None
+    dose_mg_m2: Optional[float] = Field(default=None, gt=0)
+    planned_sessions: Optional[int] = Field(default=None, gt=0)
+    interval_days: Optional[int] = Field(default=None, gt=0)
+    status: Optional[ProtocolStatus] = None
+    notes: Optional[str] = None
+
+
+class ProtocolResponse(BaseModel):
+    id: int
+    pet_id: int
+    name: str
+    drug_name: Optional[str] = None
+    dose_mg_m2: Optional[float] = None
+    planned_sessions: int
+    interval_days: Optional[int] = None
+    start_date: date
+    status: ProtocolStatus
+    notes: Optional[str] = None
+    # Progresso calculado
+    executed_sessions: int
+    remaining_sessions: int
+    progress_percent: float
+    last_session_date: Optional[date] = None
+    next_session_date: Optional[date] = None
+    is_overdue: bool
 
 
 # ─── Session (vet only) ──────────────────────────────
