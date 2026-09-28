@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import api from '../api'
 import Notifications from '../components/Notifications'
 import PetAgenda from '../components/PetAgenda'
+import ProtocolPanel from '../components/ProtocolPanel'
 
 function TutorDashboard({ user, onLogout }) {
   const [pets, setPets] = useState([])
@@ -119,6 +120,9 @@ function TutorDashboard({ user, onLogout }) {
         </button>
         <button className={activeTab === 'diario' ? 'active' : ''} onClick={() => setActiveTab('diario')} disabled={!selectedPet}>
           Diario
+        </button>
+        <button className={activeTab === 'tratamento' ? 'active' : ''} onClick={() => setActiveTab('tratamento')} disabled={!selectedPet}>
+          Tratamento
         </button>
         <button className={activeTab === 'agenda' ? 'active' : ''} onClick={() => setActiveTab('agenda')} disabled={!selectedPet}>
           Agenda
@@ -274,6 +278,11 @@ function TutorDashboard({ user, onLogout }) {
             )}
           </div>
         </div>
+      )}
+
+      {/* Progresso do protocolo (somente leitura) */}
+      {activeTab === 'tratamento' && selectedPet && (
+        <ProtocolPanel pet={selectedPet} />
       )}
 
       {/* Agenda do pet */}

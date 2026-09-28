@@ -19,7 +19,7 @@ Legenda: ✅ atendido · 🟡 parcial · ❌ não iniciado
 | RF-01 | Cadastro/edição de pacientes e tutores (relacional) | `models.User/Pet`, `routers/pets.py` (POST/PATCH), `routers/auth.py` (register) | ✅ (falta PATCH de tutor) |
 | RF-02 | Peso diário persistido no Mongo | Peso vai para `pet_records` e `chemo_sessions` no Postgres | 🟡 mover para coleção Mongo `daily_logs` |
 | RF-03 | Múltiplos sintomas (vômito, letargia) + **escala de dor** no Mongo | `PetRecord.symptoms` é texto livre; sem escala de dor | ❌ |
-| RF-04 | Protocolos de quimio com sessões **planejadas × executadas** | Só existe `ChemoSession` (executadas); não há entidade `Protocol` | ❌ |
+| RF-04 | Protocolos de quimio com sessões **planejadas × executadas** | `ChemoProtocol` + `chemo_sessions.protocol_id`; rotas `/api/protocols`; progresso em `services/protocols.py`; telas do vet e do tutor | ✅ |
 | RF-05 | Estatísticas via NumPy consumidas pelos gráficos | `GET /api/pets/{id}/chart` monta série de peso em Python puro | 🟡 |
 | RF-06 | Dashboard de Cuidados Paliativos (Mongo × sessões) | — | ❌ |
 | RF-07 | Exportar relatório clínico em PDF | — | ❌ |
@@ -38,12 +38,12 @@ Legenda: ✅ atendido · 🟡 parcial · ❌ não iniciado
 - README descreve SQLite e uma estrutura de pastas antiga (v1); código real é v3.1 com Postgres + Mongo.
 - Credenciais e `SECRET_KEY` estavam fixos no código — agora vêm de variáveis de ambiente (`.env.example`).
 - `docker-compose.yml` expunha o Mongo em 27017, mas o código conecta em 27018 — alinhado.
-- Não há testes automatizados nem migrações (`Base.metadata.create_all` no startup).
+- Testes automatizados começaram com o RF-04 (`backend/tests`). Ainda não há migrações (`Base.metadata.create_all` no startup).
 
 ## Roteiro sugerido
 
 1. **Decidir o banco relacional** (MySQL conforme spec, ou manter Postgres e registrar a justificativa).
-2. **Modelo de protocolo (RF-04):** tabela `protocols` (pet, droga(s), sessões planejadas, intervalo) e `chemo_sessions.protocol_id`.
+2. ~~**Modelo de protocolo (RF-04)**~~ — feito em `feature/protocolos-quimio`.
 3. **Diário no Mongo (RF-02/03):** coleção `daily_logs` `{pet_id, date, weight, symptoms: [..], pain_score 0–10, appetite, energy}` com índice `(pet_id, date)`; migrar `pet_records`.
 4. **Camada analítica (RF-05, RNF-01/04):** `backend/app/analytics/` com NumPy (tendência de peso, % de variação, médias móveis de dor/sintomas) + rota `/api/analytics/...`.
 5. **Dashboard paliativo (RF-06)** consumindo a camada analítica.
