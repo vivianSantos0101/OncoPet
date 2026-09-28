@@ -94,6 +94,74 @@ label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 13px; c
 .pet-avatar { width: 50px; height: 50px; flex-shrink: 0; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: #fff;
   background: linear-gradient(135deg, var(--primary), var(--primary-2)); box-shadow: 0 6px 14px var(--primary-ring); }
 
+/* ─── Foto do pet ─── */
+.pet-avatar { overflow: hidden; position: relative; }
+.pet-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar-edit { position: relative; flex-shrink: 0; }
+.avatar-edit .pet-avatar { cursor: pointer; }
+.avatar-edit input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; margin: 0; height: 100% !important; }
+.avatar-edit .pet-avatar:hover { filter: brightness(0.94); }
+.avatar-edit .pet-avatar:focus-within { box-shadow: 0 0 0 4px var(--primary-ring); }
+.avatar-badge {
+  position: absolute; right: -2px; bottom: -2px; width: 26px; height: 26px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--surface); color: var(--primary-strong);
+  box-shadow: var(--shadow); pointer-events: none;
+}
+.avatar-edit .pet-avatar { overflow: visible; }
+.avatar-edit .pet-avatar img { border-radius: inherit; }
+.avatar-remove {
+  position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; padding: 0; border-radius: 50%;
+  background: var(--surface); color: var(--text-secondary); box-shadow: var(--shadow);
+}
+.avatar-remove:hover { background: var(--danger); color: #fff; }
+.pet-avatar.is-busy::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit;
+  background: rgba(255,255,255,.6);
+}
+.pet-avatar.is-busy::before {
+  content: ''; position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; z-index: 2;
+  border-radius: 50%; border: 3px solid var(--primary-soft); border-top-color: var(--primary); animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.photo-field { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.photo-drop {
+  position: relative; width: 72px; height: 72px; flex-shrink: 0; border-radius: 20px; overflow: hidden; cursor: pointer;
+  display: grid; place-items: center; background: var(--field); color: var(--text-muted);
+  border: 2px dashed var(--border); margin: 0; transition: border-color .2s, color .2s;
+}
+.photo-drop:hover { border-color: var(--primary); color: var(--primary-strong); }
+.photo-drop img { width: 100%; height: 100%; object-fit: cover; }
+.photo-drop input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; margin: 0; height: 100% !important; }
+.photo-field-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.photo-field-text strong { color: var(--ink); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.photo-field-text span { color: var(--text-muted); font-size: 12.5px; }
+
+/* ─── Modal (ajuste da foto) ─── */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px;
+  background: rgba(16, 42, 51, 0.45); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+  animation: fade .2s ease both;
+}
+@keyframes fade { from { opacity: 0; } }
+.modal {
+  width: 100%; max-width: 460px; background: var(--surface); border-radius: 24px;
+  padding: 22px; box-shadow: var(--shadow-lg); animation: rise .3s var(--ease) both;
+}
+.modal h3 { font-size: 20px; }
+.modal-hint { font-size: 13.5px; color: var(--text-secondary); margin: 4px 0 14px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+.cropper-area {
+  position: relative; width: 100%; aspect-ratio: 1; max-height: 60vh;
+  border-radius: 16px; overflow: hidden; background: #0f1d22;
+}
+.cropper-area .reactEasyCrop_CropArea { border-radius: 20%; }
+.cropper-controls { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+.cropper-controls input[type=range] {
+  flex: 1; margin: 0; height: 6px !important; padding: 0; background: transparent; accent-color: var(--primary);
+}
+.cropper-rotate { padding: 8px 14px; font-size: 13px; }
+
 .stat-card { border-radius: var(--radius); padding: 20px 22px; background: var(--surface); box-shadow: var(--shadow); position: relative; overflow: hidden;
   display: flex; flex-direction: column-reverse; gap: 4px; transition: transform .25s var(--ease), box-shadow .25s var(--ease); }
 .stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
