@@ -1,15 +1,37 @@
 import { useState, useEffect } from 'react'
 import api, { getErrorMessage } from '../api'
+import { useLocation, useNavigate, matchPath, Navigate } from 'react-router-dom'
 import { PawPrint, CirclePlus, Building2, ClipboardList } from 'lucide-react'
-import PetDetail from '../components/PetDetail'
+import PetDetail, { PET_TABS } from '../components/PetDetail'
 import AppHeader from '../components/AppHeader'
+
+/**
+ * Rotas do veterinario:
+ *   /pacientes               lista
+ *   /pacientes/novo          cadastro
+ *   /clinica                 clinicas
+ *   /pacientes/:petId/:aba?  prontuario (aba: dashboard, protocolos, sessao...)
+ * Retorna null para URL desconhecida (redireciona para /pacientes).
+ */
+export function parseVetRoute(pathname) {
+  const path = pathname.replace(/\/+$/, '') || '/'
+  if (path === '/pacientes') return { tab: 'pacientes' }
+  if (path === '/pacientes/novo') return { tab: 'cadastro' }
+  if (path === '/clinica') return { tab: 'clinica' }
+  const match = matchPath('/pacientes/:petId/:aba?', path)
+  if (match && /^\d+$/.test(match.params.petId)) {
+    const aba = match.params.aba || 'dashboard'
+    if (PET_TABS.includes(aba)) return { tab: 'prontuario', petId: Number(match.params.petId), aba }
+  }
+  return null
+}
 
 function VetDashboard({ user, onLogout }) {
   const [pets, setPets] = useState([])
   const [tutors, setTutors] = useState([])
   const [clinics, setClinics] = useState([])
-  const [selectedPet, setSelectedPet] = useState(null)
-  const [activeTab, setActiveTab] = useState('pacientes')
+  const [loaded, setLoaded] = useState(false)
+  const [lastPetId, setLastPetId] = useState(null)
   const [breeds, setBreeds] = useState({ dogs: [], cats: [] })
 
   // Forms
@@ -22,9 +44,38 @@ function VetDashboard({ user, onLogout }) {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
+  // Tela atual vem da URL (voltar do navegador e F5 funcionam)
+  const location = useLocation()
+  const navigate = useNavigate()
+  const route = parseVetRoute(location.pathname)
+  const activeTab = route?.tab
+  const selectedPet = route?.petId ? pets.find(p => p.id === route.petId) : null
+
   useEffect(() => {
     loadAll()
   }, [])
+
+  useEffect(() => {
+    if (route?.petId) setLastPetId(route.petId)
+  }, [route?.petId])
+
+  useEffect(() => {
+    window.scrollTo({ top: 0 })
+  }, [activeTab, route?.petId])
+
+  const goTo = (tab) => {
+    const paths = {
+      pacientes: '/pacientes',
+      cadastro: '/pacientes/novo',
+      clinica: '/clinica',
+      prontuario: `/pacientes/${lastPetId}`,
+    }
+    navigate(paths[tab])
+  }
+
+  const goToPetTab = (petId, aba) => {
+    navigate(aba === 'dashboard' ? `/pacientes/${petId}` : `/pacientes/${petId}/${aba}`)
+  }
 
   const loadAll = async () => {
     try {
@@ -33,6 +84,7 @@ function VetDashboard({ user, onLogout }) {
       ])
       setPets(p.data); setTutors(t.data); setClinics(c.data); setBreeds(b.data)
     } catch (err) { console.error(err) }
+    finally { setLoaded(true) }
   }
 
   const currentBreeds = petForm.species.includes('gato') ? breeds.cats : breeds.dogs
@@ -65,21 +117,23 @@ function VetDashboard({ user, onLogout }) {
     } catch (err) { setError(getErrorMessage(err)) }
   }
 
+  if (!route) return <Navigate to="/pacientes" replace />
+
   return (
     <div className="container">
       <AppHeader role="vet" userName={user.full_name} onLogout={onLogout} />
 
       <nav className="nav-tabs">
-        <button className={activeTab === 'pacientes' ? 'active' : ''} onClick={() => setActiveTab('pacientes')}>
+        <button className={activeTab === 'pacientes' ? 'active' : ''} onClick={() => goTo('pacientes')}>
           <PawPrint /><span className="label-long">Pacientes</span><span className="label-short">Pacientes</span>
         </button>
-        <button className={activeTab === 'cadastro' ? 'active' : ''} onClick={() => setActiveTab('cadastro')}>
+        <button className={activeTab === 'cadastro' ? 'active' : ''} onClick={() => goTo('cadastro')}>
           <CirclePlus /><span className="label-long">Novo Paciente</span><span className="label-short">Novo</span>
         </button>
-        <button className={activeTab === 'clinica' ? 'active' : ''} onClick={() => setActiveTab('clinica')}>
+        <button className={activeTab === 'clinica' ? 'active' : ''} onClick={() => goTo('clinica')}>
           <Building2 /><span className="label-long">Clinica</span><span className="label-short">Clinica</span>
         </button>
-        <button className={activeTab === 'prontuario' ? 'active' : ''} onClick={() => setActiveTab('prontuario')} disabled={!selectedPet}>
+        <button className={activeTab === 'prontuario' ? 'active' : ''} onClick={() => goTo('prontuario')} disabled={!lastPetId}>
           <ClipboardList /><span className="label-long">Prontuario</span><span className="label-short">Prontuario</span>
         </button>
       </nav>
@@ -97,8 +151,8 @@ function VetDashboard({ user, onLogout }) {
             </div>
           ) : (
             pets.map(pet => (
-              <div key={pet.id} className={`pet-card ${selectedPet?.id === pet.id ? 'selected' : ''}`}
-                onClick={() => { setSelectedPet(pet); setActiveTab('prontuario') }}>
+              <div key={pet.id} className={`pet-card ${lastPetId === pet.id ? 'selected' : ''}`}
+                onClick={() => goToPetTab(pet.id, 'dashboard')}>
                 <div className="pet-avatar">{pet.name.charAt(0).toUpperCase()}</div>
                 <div style={{ flex: 1 }}>
                   <strong style={{ fontSize: 16 }}>{pet.name}</strong>
@@ -191,7 +245,19 @@ function VetDashboard({ user, onLogout }) {
 
       {/* Prontuario */}
       {activeTab === 'prontuario' && selectedPet && (
-        <PetDetail pet={selectedPet} onUpdated={loadAll} />
+        <PetDetail
+          pet={selectedPet}
+          onUpdated={loadAll}
+          subTab={route.aba}
+          onSubTabChange={(aba) => goToPetTab(selectedPet.id, aba)}
+        />
+      )}
+      {activeTab === 'prontuario' && !selectedPet && loaded && (
+        <div className="card empty-state">
+          <h3>Paciente nao encontrado</h3>
+          <p>Ele pode ter sido removido ou nao esta atribuido a voce.</p>
+          <button className="primary" style={{ marginTop: 16 }} onClick={() => goTo('pacientes')}>Ver pacientes</button>
+        </div>
       )}
     </div>
   )

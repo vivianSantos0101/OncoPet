@@ -6,13 +6,15 @@ import PetAgenda from './PetAgenda'
 import FileUpload from './FileUpload'
 import ProtocolPanel from './ProtocolPanel'
 
-function PetDetail({ pet, onUpdated }) {
+export const PET_TABS = ['dashboard', 'protocolos', 'sessao', 'registros', 'documentos', 'agenda']
+
+// subTab e onSubTabChange vem da rota (/pacientes/:petId/:aba)
+function PetDetail({ pet, onUpdated, subTab = 'dashboard', onSubTabChange }) {
   const [sessions, setSessions] = useState([])
   const [records, setRecords] = useState([])
   const [documents, setDocuments] = useState([])
   const [chartData, setChartData] = useState(null)
   const [protocols, setProtocols] = useState([])
-  const [subTab, setSubTab] = useState('dashboard')
 
   // Session form
   const [sessionForm, setSessionForm] = useState({
@@ -124,8 +126,8 @@ function PetDetail({ pet, onUpdated }) {
 
       {/* Sub tabs */}
       <div className="subtabs">
-        {['dashboard', 'protocolos', 'sessao', 'registros', 'documentos', 'agenda'].map(t => (
-          <button key={t} className={subTab === t ? 'active' : ''} onClick={() => setSubTab(t)}>
+        {PET_TABS.map(t => (
+          <button key={t} className={subTab === t ? 'active' : ''} onClick={() => onSubTabChange(t)}>
             {t}
           </button>
         ))}
