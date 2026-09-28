@@ -155,6 +155,7 @@ class ProtocolResponse(BaseModel):
 
 class SessionCreate(BaseModel):
     pet_id: int
+    protocol_id: Optional[int] = None
     date: date
     session_type: str = "quimioterapia"
     drug_name: Optional[str] = None
@@ -166,6 +167,7 @@ class SessionCreate(BaseModel):
 class SessionResponse(BaseModel):
     id: int
     pet_id: int
+    protocol_id: Optional[int] = None
     date: date
     session_type: str
     drug_name: Optional[str] = None
