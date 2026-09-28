@@ -22,18 +22,20 @@ OncoPet/
 │   │   ├── config.py        # configurações via variáveis de ambiente
 │   │   ├── database.py      # SQLAlchemy (PostgreSQL)
 │   │   ├── mongodb.py       # Motor (MongoDB)
-│   │   ├── models.py        # User, Clinic, Pet, ChemoSession, PetRecord, Document, Reminder
+│   │   ├── models.py        # User, Clinic, Pet, ChemoProtocol, ChemoSession, PetRecord, Document, Reminder
 │   │   ├── schemas.py
+│   │   ├── services/        # regras de negócio (ex.: progresso de protocolos)
 │   │   ├── auth.py          # JWT + dependências require_vet / get_current_user
 │   │   ├── breeds.py
-│   │   └── routers/         # auth, clinics, tutors, vets, pets, sessions,
+│   │   └── routers/         # auth, clinics, tutors, vets, pets, protocols, sessions,
 │   │                        # records, documents, reminders, exams (Mongo), uploads
+│   ├── tests/
 │   └── requirements.txt
 ├── frontend/
 │   └── src/
 │       ├── App.jsx · api.js · main.jsx · index.css
 │       ├── pages/           # Login, VetDashboard, TutorDashboard
-│       └── components/      # PetDetail, PetAgenda, Notifications, FileUpload
+│       └── components/      # PetDetail, ProtocolPanel, PetAgenda, Notifications, FileUpload
 ├── docs/
 ├── docker-compose.yml       # Postgres :5433 + Mongo :27018
 └── .env.example
@@ -55,6 +57,16 @@ uvicorn app.main:app --reload        # http://localhost:8000/docs
 cd frontend
 npm install
 npm run dev                          # http://localhost:5173
+```
+
+### Testes (backend)
+
+Rodam com SQLite, sem precisar do Docker:
+
+```bash
+cd backend
+pip install -r requirements-dev.txt
+pytest
 ```
 
 As configurações têm defaults compatíveis com o `docker-compose.yml`. Para mudar, copie `.env.example` para `.env` e exporte as variáveis antes de subir o backend.
