@@ -1,0 +1,26 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: oncovet-postgres
+    environment:
+      POSTGRES_USER: oncovet
+      POSTGRES_PASSWORD: oncovet123
+      POSTGRES_DB: oncovet
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:7
+    container_name: oncovet-mongo
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
+volumes:
+  pg_data:
+  mongo_data:
