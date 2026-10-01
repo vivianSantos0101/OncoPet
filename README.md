@@ -169,6 +169,8 @@ npm run dev                          # app em http://localhost:5173
 
 As configurações têm valores padrão compatíveis com o `docker-compose.yml`. Para mudar, copie `.env.example` para `.env`.
 
+> Para colocar no ar numa instância da AWS (EC2) com HTTPS, veja [`docs/DEPLOY_AWS.md`](docs/DEPLOY_AWS.md).
+
 ### Dados de demonstração
 
 Com o backend rodando, popule o banco com pacientes, protocolos, sessões, diário, lembretes e laudos fictícios:
@@ -257,6 +259,7 @@ OncoPet/
 | [Manual de cuidados paliativos](docs/MANUAL_PALIATIVO.md) | Cruzamento diário × sessões, regras dos alertas |
 | [Manual do relatório PDF](docs/MANUAL_RELATORIO.md) | Conteúdo do relatório e decisões de implementação |
 | [Manual de autenticação](docs/MANUAL_AUTENTICACAO.md) | Login, cookie de sessão, proteção contra CSRF e permissões |
+| [Deploy na AWS](docs/DEPLOY_AWS.md) | Colocar no ar numa EC2 com Docker, HTTPS e backup |
 
 ### Cálculo da dose
 
