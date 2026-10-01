@@ -11,6 +11,7 @@ from ..models import ChemoProtocol, Pet, User
 from ..schemas import ProtocolCreate, ProtocolUpdate, ProtocolResponse
 from ..auth import get_current_user, require_vet
 from ..services.protocols import compute_progress
+from .pets import ensure_pet_access
 
 router = APIRouter(prefix="/api/protocols", tags=["protocols"])
 
@@ -34,8 +35,8 @@ def get_pet_or_404(db: Session, pet_id: int) -> Pet:
 
 
 def check_pet_access(pet: Pet, user: User) -> None:
-    if user.role == "tutor" and pet.tutor_id != user.id:
-        raise HTTPException(status_code=403, detail="Sem acesso a este pet")
+    """Tutor dono ou vet responsavel (mesma regra do resto da API)."""
+    ensure_pet_access(pet, user)
 
 
 def get_protocol_or_404(db: Session, protocol_id: int) -> ChemoProtocol:
@@ -47,7 +48,7 @@ def get_protocol_or_404(db: Session, protocol_id: int) -> ChemoProtocol:
 
 @router.post("/", response_model=ProtocolResponse, status_code=201)
 def create_protocol(data: ProtocolCreate, db: Session = Depends(get_db), user: User = Depends(require_vet)):
-    get_pet_or_404(db, data.pet_id)
+    check_pet_access(get_pet_or_404(db, data.pet_id), user)
     protocol = ChemoProtocol(**data.model_dump(), status="ativo", created_by=user.id)
     db.add(protocol)
     db.commit()
@@ -77,9 +78,10 @@ def get_protocol(protocol_id: int, db: Session = Depends(get_db), user: User = D
 @router.patch("/{protocol_id}", response_model=ProtocolResponse)
 def update_protocol(
     protocol_id: int, data: ProtocolUpdate,
-    db: Session = Depends(get_db), _: User = Depends(require_vet),
+    db: Session = Depends(get_db), user: User = Depends(require_vet),
 ):
     protocol = get_protocol_or_404(db, protocol_id)
+    check_pet_access(protocol.pet, user)
     changes = data.model_dump(exclude_unset=True)
 
     planned = changes.get("planned_sessions")
