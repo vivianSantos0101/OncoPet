@@ -1,0 +1,37 @@
+# Caddy: HTTPS automatico (Let's Encrypt) e um so endereco para site e API.
+# DOMAIN vem do .env.prod (ex.: 54-12-3-4.sslip.io).
+{$DOMAIN} {
+	encode zstd gzip
+
+	# API (FastAPI) e a documentacao interativa
+	@api path /api/* /docs /docs/* /openapi.json /redoc
+	handle @api {
+		reverse_proxy backend:8000
+	}
+
+	# Site (React): arquivos do build; rotas como /pacientes/2 caem no index.html
+	handle {
+		root * /srv
+		# Arquivos do build tem o hash no nome: podem ficar em cache por 1 ano.
+		# O resto (index.html) sempre e conferido, para a versao nova aparecer logo.
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		@pages not path /assets/*
+		header @pages Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

@@ -10,6 +10,7 @@ venv/
 .env
 .env.*
 !.env.example
+!.env.prod.example
 
 # Uploads gerados em runtime
 backend/app/uploads/
