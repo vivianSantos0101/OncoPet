@@ -187,6 +187,12 @@ label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 13px; c
 .login-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 24px;
   background: radial-gradient(700px 500px at 10% 10%, var(--primary-soft), transparent 70%), radial-gradient(700px 500px at 90% 90%, var(--accent-soft), transparent 70%), var(--bg); }
 .login-box { background: var(--surface); padding: 44px 40px 34px; border-radius: 28px; box-shadow: var(--shadow-lg); width: 100%; max-width: 440px; }
+/* Carregando a sessao ao abrir o app */
+.app-loading { min-height: 100vh; display: grid; place-items: center; }
+.app-loading .logo-mark { border-radius: 20px; animation: pulse-soft 1.2s ease-in-out infinite alternate; }
+@keyframes pulse-soft { from { opacity: .55; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .app-loading .logo-mark { animation: none; } }
+
 /* Logo (pastor-alemao de orelha quebrada) */
 .logo-mark { display: block; flex-shrink: 0; }
 .login-logo { display: flex; justify-content: center; margin-bottom: 14px; }

@@ -140,7 +140,7 @@ flowchart LR
 | Análise | NumPy (operações vetorizadas) |
 | Relatórios | ReportLab |
 | Bancos | PostgreSQL (dados relacionais) · MongoDB (diário e exames) |
-| Autenticação | JWT com os papéis `vet` e `tutor` |
+| Autenticação | JWT em cookie `HttpOnly` (nada no `localStorage`), com os papéis `vet` e `tutor` |
 | Testes | pytest · mongomock-motor · `node --test` |
 
 **Por que dois bancos?** Os cadastros têm relações fixas (pet → tutor → veterinário → protocolo → sessões) e ficam no PostgreSQL. O diário do tutor e os exames variam de formato a cada registro, então ficam no MongoDB. Os dois se ligam pelo `id` do pet.
@@ -256,6 +256,7 @@ OncoPet/
 | [Manual do NumPy](docs/MANUAL_NUMPY.md) | Cada cálculo estatístico explicado com exemplos |
 | [Manual de cuidados paliativos](docs/MANUAL_PALIATIVO.md) | Cruzamento diário × sessões, regras dos alertas |
 | [Manual do relatório PDF](docs/MANUAL_RELATORIO.md) | Conteúdo do relatório e decisões de implementação |
+| [Manual de autenticação](docs/MANUAL_AUTENTICACAO.md) | Login, cookie de sessão, proteção contra CSRF e permissões |
 
 ### Cálculo da dose
 
