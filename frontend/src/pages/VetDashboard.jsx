@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import api, { getErrorMessage } from '../api'
 import { useLocation, useNavigate, matchPath, Navigate } from 'react-router-dom'
-import { PawPrint, CirclePlus, Building2, ClipboardList } from 'lucide-react'
+import { PawPrint, CirclePlus, Building2, ClipboardList, HeartPulse } from 'lucide-react'
 import PetDetail, { PET_TABS } from '../components/PetDetail'
 import AppHeader from '../components/AppHeader'
 import PetAvatar from '../components/PetAvatar'
+import PalliativeDashboard from '../components/PalliativeDashboard'
 import PhotoField from '../components/PhotoField'
 import { uploadPetPhoto } from '../image'
 
@@ -12,6 +13,7 @@ import { uploadPetPhoto } from '../image'
  * Rotas do veterinario:
  *   /pacientes               lista
  *   /pacientes/novo          cadastro
+ *   /paliativos              painel de cuidados paliativos (RF-06)
  *   /clinica                 clinicas
  *   /pacientes/:petId/:aba?  prontuario (aba: dashboard, protocolos, sessao...)
  * Retorna null para URL desconhecida (redireciona para /pacientes).
@@ -20,6 +22,7 @@ export function parseVetRoute(pathname) {
   const path = pathname.replace(/\/+$/, '') || '/'
   if (path === '/pacientes') return { tab: 'pacientes' }
   if (path === '/pacientes/novo') return { tab: 'cadastro' }
+  if (path === '/paliativos') return { tab: 'paliativos' }
   if (path === '/clinica') return { tab: 'clinica' }
   const match = matchPath('/pacientes/:petId/:aba?', path)
   if (match && /^\d+$/.test(match.params.petId)) {
@@ -71,6 +74,7 @@ function VetDashboard({ user, onLogout }) {
     const paths = {
       pacientes: '/pacientes',
       cadastro: '/pacientes/novo',
+      paliativos: '/paliativos',
       clinica: '/clinica',
       prontuario: `/pacientes/${lastPetId}`,
     }
@@ -140,6 +144,9 @@ function VetDashboard({ user, onLogout }) {
         <button className={activeTab === 'pacientes' ? 'active' : ''} onClick={() => goTo('pacientes')}>
           <PawPrint /><span className="label-long">Pacientes</span><span className="label-short">Pacientes</span>
         </button>
+        <button className={activeTab === 'paliativos' ? 'active' : ''} onClick={() => goTo('paliativos')}>
+          <HeartPulse /><span className="label-long">Paliativos</span><span className="label-short">Paliativos</span>
+        </button>
         <button className={activeTab === 'cadastro' ? 'active' : ''} onClick={() => goTo('cadastro')}>
           <CirclePlus /><span className="label-long">Novo Paciente</span><span className="label-short">Novo</span>
         </button>
@@ -180,6 +187,11 @@ function VetDashboard({ user, onLogout }) {
             ))
           )}
         </div>
+      )}
+
+      {/* Cuidados paliativos (RF-06) */}
+      {activeTab === 'paliativos' && (
+        <PalliativeDashboard onOpenPet={(petId) => goToPetTab(petId, 'dashboard')} />
       )}
 
       {/* Cadastro de paciente */}

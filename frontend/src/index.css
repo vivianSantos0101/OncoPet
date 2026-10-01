@@ -377,6 +377,103 @@ label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 13px; c
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 
+/* ─── Cuidados paliativos (RF-06) ─── */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.spin-icon { animation: spin .8s linear infinite; }
+.link-btn { padding: 0; background: none; color: var(--primary-strong); font-weight: 700; font-size: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.link-btn:active:not(:disabled) { transform: none; }
+
+.level-critico { background: #fff0f0; color: #c92a2a; }
+.level-atencao { background: #fff4e6; color: #c2410c; }
+.level-estavel { background: #e3f8f0; color: #087f5b; }
+
+.pal-intro { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.pal-intro h3 { margin-bottom: 4px; }
+.pal-intro .icon-btn { flex-shrink: 0; }
+
+.level-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 14px; }
+.level-tile {
+  display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 10px; row-gap: 2px;
+  align-items: center; text-align: left; padding: 16px 18px; border-radius: var(--radius);
+  background: var(--surface); color: var(--text); box-shadow: var(--shadow), inset 0 0 0 2px transparent;
+  transition: transform .2s var(--ease), box-shadow .2s var(--ease);
+}
+.level-tile:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.level-tile svg { grid-row: span 2; width: 34px; height: 34px; padding: 7px; border-radius: 12px; }
+.level-tile strong { font-size: 28px; font-weight: 800; line-height: 1; color: var(--ink); display: inline; }
+.level-tile-label { grid-column: 2; font-size: 14px; font-weight: 700; }
+.level-tile-hint { grid-column: 1 / -1; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-top: 6px; }
+.level-tile strong { grid-column: 2; grid-row: 1; }
+.level-tile .level-tile-label { grid-row: 2; }
+.tile-critico svg { background: #fff0f0; color: #c92a2a; }
+.tile-atencao svg { background: #fff4e6; color: #c2410c; }
+.tile-estavel svg { background: #e3f8f0; color: #087f5b; }
+.tile-critico.active { box-shadow: var(--shadow), inset 0 0 0 2px #e03131; }
+.tile-atencao.active { box-shadow: var(--shadow), inset 0 0 0 2px #f08c00; }
+.tile-estavel.active { box-shadow: var(--shadow), inset 0 0 0 2px var(--primary); }
+.pal-filter-note { font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; }
+
+.pal-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin-bottom: 20px; }
+.pal-patient {
+  background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px 20px 18px;
+  border-left: 5px solid transparent; animation: rise .45s var(--ease) both;
+}
+.level-border-critico { border-left-color: #e03131; }
+.level-border-atencao { border-left-color: #f08c00; }
+.level-border-estavel { border-left-color: var(--primary); }
+.pal-patient-head {
+  display: flex; align-items: center; gap: 14px; width: 100%; padding: 0; background: none; color: inherit;
+  text-align: left; border-radius: var(--radius-sm); font-weight: inherit;
+}
+.pal-patient-head:active:not(:disabled) { transform: none; }
+.pal-patient-head .status-chip { margin-top: 0; align-self: center; }
+.pal-patient-name { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.pal-patient-name strong { font-size: 16px; color: var(--ink); }
+.pal-patient-name span { font-size: 13px; color: var(--text-secondary); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pal-open { color: var(--text-muted); flex-shrink: 0; transition: transform .2s var(--ease); }
+.pal-patient-head:hover .pal-open { transform: translateX(3px); color: var(--primary-strong); }
+
+.pal-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 14px 0 0; padding: 12px 0 0; border-top: 1px solid var(--border); }
+.pal-metric { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pal-metric-label { font-size: 12px; font-weight: 700; color: var(--text-muted); }
+.pal-metric-value { font-size: 16px; font-weight: 800; color: var(--ink); display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+.pal-metric-value small { font-size: 12px; color: var(--text-muted); }
+.pal-metric-value .trend { font-size: 12px; }
+
+.pal-alerts { list-style: none; padding: 0; margin: 12px 0 0; display: flex; flex-direction: column; gap: 6px; }
+.pal-alert { display: flex; align-items: flex-start; gap: 8px; padding: 7px 12px; border-radius: 10px; font-size: 13px; font-weight: 600; color: var(--text); }
+.pal-alert svg { flex-shrink: 0; margin-top: 2px; }
+.alert-critico { background: #fff0f0; } .alert-critico svg { color: #c92a2a; }
+.alert-atencao { background: #fff8ef; } .alert-atencao svg { color: #c2410c; }
+
+/* Tolerância às sessões (prontuário) */
+.tolerance-compare { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 14px; }
+.tolerance-list { list-style: none; padding: 0; margin: 0; }
+.tolerance-list li { display: grid; grid-template-columns: 92px 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13.5px; }
+.tolerance-list li:last-child { border-bottom: none; }
+.tolerance-date { font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+.tolerance-detail { color: var(--text-secondary); min-width: 0; }
+.tolerance-detail strong { color: var(--text); }
+.tolerance-list .status-chip { margin-top: 0; }
+.level-none { background: var(--field); color: var(--text-secondary); }
+
+@media (max-width: 640px) {
+  .level-tiles { gap: 8px; }
+  .level-tile { padding: 12px; grid-template-columns: 1fr; }
+  .level-tile svg { grid-row: auto; width: 28px; height: 28px; padding: 5px; }
+  .level-tile strong { grid-column: 1; grid-row: auto; font-size: 24px; }
+  .level-tile .level-tile-label { grid-column: 1; grid-row: auto; font-size: 12.5px; }
+  .level-tile-hint { display: none; }
+  .pal-patient { padding: 14px 14px 16px; }
+  .pal-patient-head { flex-wrap: wrap; gap: 10px 12px; }
+  .pal-patient-head .status-chip { order: 3; margin-left: 60px; }
+  .pal-open { display: none; }
+  .pal-metrics { grid-template-columns: 1fr 1fr; }
+  .tolerance-compare { grid-template-columns: 1fr; }
+  .tolerance-list li { grid-template-columns: 1fr auto; }
+  .tolerance-detail { grid-column: 1 / -1; grid-row: 2; }
+}
+
 /* ─── Responsivo ─── */
 @media (max-width: 900px) {
   .grid-4 { grid-template-columns: 1fr 1fr; }

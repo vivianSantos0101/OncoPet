@@ -7,6 +7,7 @@ import ProtocolPanel from './ProtocolPanel'
 import DailyLogList from './DailyLogList'
 import PetAvatar from './PetAvatar'
 import PetAnalytics from './PetAnalytics'
+import SessionTolerance from './SessionTolerance'
 import { formatDate, todayISO } from '../dates'
 
 export const PET_TABS = ['dashboard', 'protocolos', 'sessao', 'registros', 'documentos', 'agenda']
@@ -19,6 +20,7 @@ function PetDetail({ pet, onUpdated, subTab = 'dashboard', onSubTabChange }) {
   const [chartData, setChartData] = useState(null)
   const [protocols, setProtocols] = useState([])
   const [analytics, setAnalytics] = useState(null)
+  const [palliative, setPalliative] = useState(null)
 
   // Session form
   const [sessionForm, setSessionForm] = useState({
@@ -37,15 +39,16 @@ function PetDetail({ pet, onUpdated, subTab = 'dashboard', onSubTabChange }) {
 
   const loadAll = async () => {
     try {
-      const [s, r, d, c, p, a] = await Promise.all([
+      const [s, r, d, c, p, a, pal] = await Promise.all([
         api.get(`/sessions/pet/${pet.id}`),
         api.get(`/records/pet/${pet.id}`),
         api.get(`/documents/pet/${pet.id}`),
         api.get(`/pets/${pet.id}/chart`),
         api.get(`/protocols/pet/${pet.id}`),
         api.get(`/analytics/pet/${pet.id}`),
+        api.get(`/palliative/pet/${pet.id}`),
       ])
-      setSessions(s.data); setRecords(r.data); setDocuments(d.data); setChartData(c.data); setProtocols(p.data); setAnalytics(a.data)
+      setSessions(s.data); setRecords(r.data); setDocuments(d.data); setChartData(c.data); setProtocols(p.data); setAnalytics(a.data); setPalliative(pal.data)
     } catch (err) { console.error('Erro ao carregar dados:', err) }
   }
 
@@ -162,6 +165,8 @@ function PetDetail({ pet, onUpdated, subTab = 'dashboard', onSubTabChange }) {
               </div>
             </div>
           )}
+
+          <SessionTolerance data={palliative} />
 
           <PetAnalytics data={analytics} />
 
