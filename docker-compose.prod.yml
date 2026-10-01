@@ -1,0 +1,77 @@
+# OncoPet em producao (uma maquina com Docker).
+# Uso: docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+# Passo a passo completo: docs/DEPLOY_AWS.md
+
+name: oncopet
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: oncopet
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env.prod}
+      POSTGRES_DB: oncopet
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U oncopet -d oncopet"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:7
+    # Limita o cache do MongoDB: a instancia tem pouca memoria (1 GB)
+    command: ["--wiredTigerCacheSizeGB", "0.25"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: oncopet
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?defina MONGO_PASSWORD no .env.prod}
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql://oncopet:${POSTGRES_PASSWORD}@postgres:5432/oncopet
+      MONGODB_URL: mongodb://oncopet:${MONGO_PASSWORD}@mongodb:27017/?authSource=admin
+      SECRET_KEY: ${SECRET_KEY:?defina SECRET_KEY no .env.prod}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-480}
+      COOKIE_SECURE: "true"
+    volumes:
+      - uploads:/app/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build: ./frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?defina DOMAIN no .env.prod}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+# Os dados ficam nestes volumes e sobrevivem a atualizacoes e reinicios
+volumes:
+  pg_data:
+  mongo_data:
+  uploads:
+  caddy_data:
+  caddy_config:
