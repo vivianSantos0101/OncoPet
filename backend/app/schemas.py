@@ -324,3 +324,57 @@ class ReminderResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ─── Estatisticas (RF-05) ─────────────────────────────
+
+class WeightStatPoint(BaseModel):
+    date: date
+    weight: float
+    moving_average: float
+
+
+class PainStatPoint(BaseModel):
+    date: date
+    pain: int
+    moving_average: float
+
+
+class WeightSummary(BaseModel):
+    first: float
+    last: float
+    min: float
+    max: float
+    change_kg: float
+    change_percent: float
+    trend_kg_per_week: Optional[float] = None
+    relevant_loss: bool  # perda >= 5% desde o inicio
+
+
+class PainSummary(BaseModel):
+    mean: float
+    last: int
+    max: int
+    recent_mean: Optional[float] = None     # ultimas 4 semanas
+    previous_mean: Optional[float] = None   # 4 semanas anteriores
+    recent_change: Optional[float] = None
+    trend_per_week: Optional[float] = None
+    severe_percent: float                   # % dos registros com dor >= 7
+
+
+class SymptomCount(BaseModel):
+    symptom: str
+    count: int
+    percent: float
+
+
+class PetAnalytics(BaseModel):
+    pet_id: int
+    reference_date: date
+    logs_count: int
+    weight_points: List[WeightStatPoint]
+    weight: Optional[WeightSummary] = None
+    pain_points: List[PainStatPoint]
+    pain: Optional[PainSummary] = None
+    symptoms: List[SymptomCount]
+
