@@ -15,12 +15,15 @@ from typing import List, Optional
 from datetime import datetime, date
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from bson import ObjectId
 
+from ..database import get_db
 from ..mongodb import get_exams_collection
 from ..models import User
 from ..auth import get_current_user, require_vet
+from .pets import ensure_pet_access, get_pet_or_404
 
 router = APIRouter(prefix="/api/exams", tags=["exams"])
 
@@ -54,8 +57,9 @@ class ExamResponse(BaseModel):
 # ─── Endpoints ────────────────────────────────────────
 
 @router.post("/", response_model=ExamResponse, status_code=201)
-async def create_exam(exam: ExamCreate, user: User = Depends(require_vet)):
-    """Vet cadastra resultado de exame (MongoDB)."""
+async def create_exam(exam: ExamCreate, db: Session = Depends(get_db), user: User = Depends(require_vet)):
+    """Vet responsavel cadastra resultado de exame (MongoDB)."""
+    ensure_pet_access(get_pet_or_404(db, exam.pet_id), user)
     collection = get_exams_collection()
 
     document = {
@@ -80,9 +84,11 @@ async def create_exam(exam: ExamCreate, user: User = Depends(require_vet)):
 async def list_exams_by_pet(
     pet_id: int,
     exam_type: Optional[str] = None,
+    db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    """Lista exames de um pet (tutor e vet podem ver)."""
+    """Lista exames de um pet (tutor dono e vet responsavel)."""
+    ensure_pet_access(get_pet_or_404(db, pet_id), user)
     collection = get_exams_collection()
 
     query = {"pet_id": pet_id}
@@ -98,7 +104,7 @@ async def list_exams_by_pet(
 
 
 @router.get("/{exam_id}", response_model=ExamResponse)
-async def get_exam(exam_id: str, user: User = Depends(get_current_user)):
+async def get_exam(exam_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     """Busca um exame especifico pelo ID."""
     collection = get_exams_collection()
 
@@ -109,20 +115,23 @@ async def get_exam(exam_id: str, user: User = Depends(get_current_user)):
 
     if not doc:
         raise HTTPException(status_code=404, detail="Exame nao encontrado")
+    ensure_pet_access(get_pet_or_404(db, doc["pet_id"]), user)
 
     doc["id"] = str(doc.pop("_id"))
     return ExamResponse(**doc)
 
 
 @router.delete("/{exam_id}", status_code=204)
-async def delete_exam(exam_id: str, user: User = Depends(require_vet)):
-    """Vet pode deletar um exame."""
+async def delete_exam(exam_id: str, db: Session = Depends(get_db), user: User = Depends(require_vet)):
+    """Vet responsavel pode deletar um exame."""
     collection = get_exams_collection()
 
     try:
-        result = await collection.delete_one({"_id": ObjectId(exam_id)})
+        doc = await collection.find_one({"_id": ObjectId(exam_id)})
     except Exception:
         raise HTTPException(status_code=400, detail="ID invalido")
 
-    if result.deleted_count == 0:
+    if not doc:
         raise HTTPException(status_code=404, detail="Exame nao encontrado")
+    ensure_pet_access(get_pet_or_404(db, doc["pet_id"]), user)
+    await collection.delete_one({"_id": doc["_id"]})

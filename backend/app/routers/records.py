@@ -11,6 +11,7 @@ from ..models import Pet, User
 from ..mongodb import get_daily_logs_collection
 from ..schemas import RecordCreate, RecordResponse
 from ..services.daily_logs import list_logs, to_document, to_response
+from .pets import ensure_pet_access, get_pet_or_404
 
 router = APIRouter(prefix="/api/records", tags=["records"])
 
@@ -36,11 +37,7 @@ async def create_record(data: RecordCreate, db: Session = Depends(get_db), user:
 
 @router.get("/pet/{pet_id}", response_model=List[RecordResponse])
 async def list_records(pet_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
-    pet = db.query(Pet).filter(Pet.id == pet_id).first()
-    if not pet:
-        raise HTTPException(status_code=404, detail="Pet nao encontrado")
-    if user.role == "tutor" and pet.tutor_id != user.id:
-        raise HTTPException(status_code=403, detail="Sem acesso a este pet")
+    ensure_pet_access(get_pet_or_404(db, pet_id), user)
 
     docs = await list_logs(get_daily_logs_collection(), pet_id)
     return [to_response(d) for d in docs]

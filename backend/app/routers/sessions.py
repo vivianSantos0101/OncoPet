@@ -5,20 +5,19 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..models import ChemoProtocol, ChemoSession, Pet, User
+from ..models import ChemoProtocol, ChemoSession, User
 from ..schemas import SessionCreate, SessionResponse
 from ..auth import get_current_user, require_vet
 from ..services.protocols import check_can_add_session, refresh_status_after_session
-from .pets import calculate_bsa
+from .pets import calculate_bsa, ensure_pet_access, get_pet_or_404
 
 router = APIRouter(prefix="/api/sessions", tags=["sessions"])
 
 
 @router.post("/", response_model=SessionResponse, status_code=201)
 def create_session(data: SessionCreate, db: Session = Depends(get_db), user: User = Depends(require_vet)):
-    pet = db.query(Pet).filter(Pet.id == data.pet_id).first()
-    if not pet:
-        raise HTTPException(status_code=404, detail="Pet nao encontrado")
+    pet = get_pet_or_404(db, data.pet_id)
+    ensure_pet_access(pet, user)  # so o vet responsavel registra sessao
 
     drug_name, dose_mg_m2 = data.drug_name, data.dose_mg_m2
 
@@ -59,5 +58,6 @@ def create_session(data: SessionCreate, db: Session = Depends(get_db), user: Use
 
 
 @router.get("/pet/{pet_id}", response_model=List[SessionResponse])
-def list_sessions(pet_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
+def list_sessions(pet_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    ensure_pet_access(get_pet_or_404(db, pet_id), user)
     return db.query(ChemoSession).filter(ChemoSession.pet_id == pet_id).order_by(ChemoSession.date.desc()).all()
