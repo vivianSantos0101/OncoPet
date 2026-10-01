@@ -37,6 +37,7 @@ Legenda: ✅ atendido · 🟡 parcial · ❌ não iniciado
 
 - README descreve SQLite e uma estrutura de pastas antiga (v1); código real é v3.1 com Postgres + Mongo.
 - Credenciais e `SECRET_KEY` estavam fixos no código — agora vêm de variáveis de ambiente (`.env.example`).
+- A sessão ficava no `localStorage` — agora o JWT vai num cookie `HttpOnly` com proteção contra CSRF ([`MANUAL_AUTENTICACAO.md`](MANUAL_AUTENTICACAO.md)).
 - `docker-compose.yml` expunha o Mongo em 27017, mas o código conecta em 27018 — alinhado.
 - Testes automatizados começaram com o RF-04 (`backend/tests`). Ainda não há migrações (`Base.metadata.create_all` no startup).
 

@@ -1,25 +1,24 @@
 import axios from 'axios'
 
+// A sessao fica num cookie HttpOnly criado pelo backend no login: o navegador
+// envia sozinho e o JavaScript nao tem acesso ao token (nada no localStorage).
 const api = axios.create({
   baseURL: '/api',
+  withCredentials: true,
+  // Protecao contra CSRF: o backend recusa alteracoes feitas so com o cookie,
+  // sem este cabecalho (que outro site nao consegue enviar)
+  headers: { 'X-Requested-With': 'XMLHttpRequest' },
 })
 
-// Interceptor: adiciona o token JWT em todas as requests
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('oncopet_token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
+// Evento disparado quando a sessao expira; o App volta para a tela de login
+export const SESSION_EXPIRED = 'oncopet:session-expired'
 
-// Interceptor: redireciona para login se 401
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('oncopet_token')
-      window.location.reload()
+    const url = error.config?.url || ''
+    if (error.response?.status === 401 && !url.startsWith('/auth/')) {
+      window.dispatchEvent(new Event(SESSION_EXPIRED))
     }
     return Promise.reject(error)
   }

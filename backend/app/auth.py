@@ -1,19 +1,30 @@
-"""Logica de autenticacao JWT com roles."""
+"""Logica de autenticacao JWT com roles.
+
+O token vai num cookie HttpOnly (o navegador envia sozinho e o JavaScript
+nao consegue ler). O cabecalho "Authorization: Bearer" continua aceito para
+clientes que nao sao o navegador: /docs, testes, scripts e curl.
+"""
 
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import bcrypt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
-from .config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
+from .config import (
+    ACCESS_TOKEN_EXPIRE_MINUTES, ALGORITHM, AUTH_COOKIE_NAME, COOKIE_SAMESITE, COOKIE_SECURE, SECRET_KEY,
+)
 from .database import get_db
 from .models import User
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+# auto_error=False: sem cabecalho Authorization, procuramos o token no cookie
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
+
+SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
+CSRF_HEADER = "X-Requested-With"  # o front envia "XMLHttpRequest" em toda requisicao
 
 
 def hash_password(password: str) -> str:
@@ -31,15 +42,42 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
+def set_auth_cookie(response: Response, token: str) -> None:
+    """Grava o token no cookie de sessao (HttpOnly: o JavaScript nao le)."""
+    response.set_cookie(
+        key=AUTH_COOKIE_NAME,
+        value=token,
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        httponly=True,
+        secure=COOKIE_SECURE,
+        samesite=COOKIE_SAMESITE,
+        path="/api",
+    )
+
+
+def clear_auth_cookie(response: Response) -> None:
+    response.delete_cookie(key=AUTH_COOKIE_NAME, path="/api", httponly=True,
+                           secure=COOKIE_SECURE, samesite=COOKIE_SAMESITE)
+
+
 def get_current_user(
-    token: str = Depends(oauth2_scheme),
+    request: Request,
+    token: Optional[str] = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Token invalido ou expirado",
+        detail="Sessao invalida ou expirada. Entre novamente.",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    if not token:
+        token = request.cookies.get(AUTH_COOKIE_NAME)
+        if not token:
+            raise credentials_exception
+        # Protecao contra CSRF: outro site ate consegue fazer o navegador enviar
+        # o cookie, mas nao consegue adicionar este cabecalho
+        if request.method not in SAFE_METHODS and request.headers.get(CSRF_HEADER) != "XMLHttpRequest":
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Requisicao recusada (CSRF)")
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")

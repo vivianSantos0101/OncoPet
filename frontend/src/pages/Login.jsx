@@ -21,7 +21,7 @@ function Login({ onLogin }) {
         const payload = { ...form, role }
         if (role !== 'vet') delete payload.crmv
         const res = await api.post('/auth/register', payload)
-        onLogin(res.data.access_token, res.data.user)
+        onLogin(res.data.user)
       } else {
         const formData = new URLSearchParams()
         formData.append('username', form.username)
@@ -29,7 +29,7 @@ function Login({ onLogin }) {
         const res = await api.post('/auth/login', formData, {
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         })
-        onLogin(res.data.access_token, res.data.user)
+        onLogin(res.data.user)
       }
     } catch (err) {
       setError(getErrorMessage(err, 'Erro de conexao'))
