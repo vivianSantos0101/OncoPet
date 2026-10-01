@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Syringe, NotebookPen, Scale, CalendarClock } from 'lucide-react'
 import api, { getErrorMessage } from '../api'
 import PetAgenda from './PetAgenda'
@@ -7,6 +6,7 @@ import FileUpload from './FileUpload'
 import ProtocolPanel from './ProtocolPanel'
 import DailyLogList from './DailyLogList'
 import PetAvatar from './PetAvatar'
+import PetAnalytics from './PetAnalytics'
 import { formatDate, todayISO } from '../dates'
 
 export const PET_TABS = ['dashboard', 'protocolos', 'sessao', 'registros', 'documentos', 'agenda']
@@ -18,6 +18,7 @@ function PetDetail({ pet, onUpdated, subTab = 'dashboard', onSubTabChange }) {
   const [documents, setDocuments] = useState([])
   const [chartData, setChartData] = useState(null)
   const [protocols, setProtocols] = useState([])
+  const [analytics, setAnalytics] = useState(null)
 
   // Session form
   const [sessionForm, setSessionForm] = useState({
@@ -36,14 +37,15 @@ function PetDetail({ pet, onUpdated, subTab = 'dashboard', onSubTabChange }) {
 
   const loadAll = async () => {
     try {
-      const [s, r, d, c, p] = await Promise.all([
+      const [s, r, d, c, p, a] = await Promise.all([
         api.get(`/sessions/pet/${pet.id}`),
         api.get(`/records/pet/${pet.id}`),
         api.get(`/documents/pet/${pet.id}`),
         api.get(`/pets/${pet.id}/chart`),
         api.get(`/protocols/pet/${pet.id}`),
+        api.get(`/analytics/pet/${pet.id}`),
       ])
-      setSessions(s.data); setRecords(r.data); setDocuments(d.data); setChartData(c.data); setProtocols(p.data)
+      setSessions(s.data); setRecords(r.data); setDocuments(d.data); setChartData(c.data); setProtocols(p.data); setAnalytics(a.data)
     } catch (err) { console.error('Erro ao carregar dados:', err) }
   }
 
@@ -103,11 +105,6 @@ function PetDetail({ pet, onUpdated, subTab = 'dashboard', onSubTabChange }) {
     }
   }
 
-  const weightChartData = chartData?.weight_history?.map(p => ({
-    date: formatDate(p.date, { day: '2-digit', month: '2-digit' }),
-    peso: p.weight,
-  })) || []
-
   return (
     <div>
       {/* Pet header */}
@@ -166,31 +163,7 @@ function PetDetail({ pet, onUpdated, subTab = 'dashboard', onSubTabChange }) {
             </div>
           )}
 
-          {/* Grafico de peso */}
-          {weightChartData.length > 1 && (
-            <div className="card">
-              <h4 style={{ marginBottom: 16 }}>Evolucao de Peso (kg)</h4>
-              <ResponsiveContainer width="100%" height={280}>
-                <AreaChart data={weightChartData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="pesoFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#12b886" stopOpacity={0.28} />
-                      <stop offset="100%" stopColor="#12b886" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid stroke="#e6eef0" vertical={false} />
-                  <XAxis dataKey="date" fontSize={11} tick={{ fill: '#94a3aa' }} axisLine={false} tickLine={false} />
-                  <YAxis fontSize={11} tick={{ fill: '#94a3aa' }} axisLine={false} tickLine={false} domain={['auto', 'auto']} />
-                  <Tooltip
-                    formatter={(v) => [`${v} kg`, 'Peso']}
-                    contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 8px 24px rgba(16,42,51,.12)', fontSize: 13 }}
-                  />
-                  <Area type="monotone" dataKey="peso" stroke="#12b886" strokeWidth={3} fill="url(#pesoFill)"
-                    dot={{ r: 4, fill: '#fff', stroke: '#12b886', strokeWidth: 2 }} activeDot={{ r: 6 }} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+          <PetAnalytics data={analytics} />
 
           {/* Ultimas sessoes */}
           <div className="card">

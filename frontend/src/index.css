@@ -224,6 +224,47 @@ label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 13px; c
 .grid-4 .stat-card:nth-child(3) .stat-icon { color: var(--tint-3-strong); }
 .grid-4 .stat-card:nth-child(4) .stat-icon { color: var(--tint-4-strong); }
 
+/* ─── Análise do tratamento (RF-05) ─── */
+.analytics { margin-top: 4px; }
+.section-title { font-size: 17px; margin: 6px 0 14px; }
+.insight-row { margin-bottom: 20px; }
+.insight-card {
+  display: flex; flex-direction: column; gap: 4px; padding: 18px 20px;
+  background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow);
+  animation: rise .45s var(--ease) both;
+}
+.insight-label { font-size: 13px; font-weight: 700; color: var(--text-secondary); }
+.insight-value { font-size: 28px; font-weight: 800; color: var(--ink); letter-spacing: -0.02em; line-height: 1.15; }
+.insight-value small { font-size: 15px; color: var(--text-muted); font-weight: 700; }
+.insight-value.insight-text { font-size: 22px; }
+.insight-sub { font-size: 13px; color: var(--text-secondary); }
+.insight-empty { font-size: 14px; color: var(--text-muted); margin-top: 6px; }
+.trend { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 700; }
+.trend-good { color: #0b8a64; }
+.trend-bad { color: #c2410c; }
+.trend-neutral { color: var(--text-secondary); }
+.status-chip {
+  display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; margin-top: 6px;
+  padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700;
+}
+.status-warning { background: #fff4e6; color: #c2410c; }
+
+.chart-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.chart-toggle { display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 13px; cursor: pointer; }
+.chart-toggle input { width: auto; height: auto !important; margin: 0; accent-color: #3b5bdb; }
+.chart-table { margin-top: 10px; font-size: 13px; }
+.chart-table summary { cursor: pointer; color: var(--primary-strong); font-weight: 700; width: fit-content; }
+.chart-table table { width: 100%; border-collapse: collapse; margin-top: 8px; font-variant-numeric: tabular-nums; }
+.chart-table th, .chart-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+.chart-table th { color: var(--text-secondary); font-weight: 700; }
+
+.bar-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.bar-list li { display: grid; grid-template-columns: 130px 1fr 92px; align-items: center; gap: 12px; font-size: 13.5px; }
+.bar-label { color: var(--ink); font-weight: 600; }
+.bar-track { height: 10px; background: var(--field); border-radius: 999px; overflow: hidden; }
+.bar-fill { display: block; height: 100%; border-radius: 999px; animation: grow .8s var(--ease) both; }
+.bar-value { color: var(--text-secondary); text-align: right; font-variant-numeric: tabular-nums; }
+
 /* ─── Diário: sintomas e escala de dor ─── */
 .chip-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
 .chip {
@@ -381,6 +422,9 @@ label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 13px; c
   .stat-card { padding: 16px; }
   .stat-card .stat-value { font-size: 26px; }
   .pet-card { padding: 14px 16px; gap: 12px; }
+  .insight-row { gap: 12px; }
+  .insight-value { font-size: 24px; }
+  .bar-list li { grid-template-columns: 96px 1fr 72px; gap: 8px; font-size: 12.5px; }
   .pain-buttons { gap: 4px; }
   .pain-btn { height: 38px; border-radius: 10px; font-size: 14px; }
   .pain-legend span { display: none; }
