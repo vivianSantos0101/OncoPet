@@ -37,6 +37,9 @@ def register(client, username, role):
     })
     assert res.status_code == 201, res.text
     body = res.json()
+    # Os testes trocam de usuario pelo cabecalho Authorization; sem isso o
+    # cookie do ultimo cadastro ficaria valendo para as proximas requisicoes
+    client.cookies.clear()
     return {"Authorization": f"Bearer {body['access_token']}"}, body["user"]
 
 
