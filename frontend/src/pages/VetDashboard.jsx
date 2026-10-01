@@ -1,13 +1,44 @@
 import { useState, useEffect } from 'react'
-import api from '../api'
-import PetDetail from '../components/PetDetail'
+import api, { getErrorMessage } from '../api'
+import { useLocation, useNavigate, matchPath, Navigate } from 'react-router-dom'
+import { PawPrint, CirclePlus, Building2, ClipboardList, HeartPulse } from 'lucide-react'
+import PetDetail, { PET_TABS } from '../components/PetDetail'
+import AppHeader from '../components/AppHeader'
+import PetAvatar from '../components/PetAvatar'
+import PalliativeDashboard from '../components/PalliativeDashboard'
+import PhotoField from '../components/PhotoField'
+import { uploadPetPhoto } from '../image'
+
+/**
+ * Rotas do veterinario:
+ *   /pacientes               lista
+ *   /pacientes/novo          cadastro
+ *   /paliativos              painel de cuidados paliativos (RF-06)
+ *   /clinica                 clinicas
+ *   /pacientes/:petId/:aba?  prontuario (aba: dashboard, protocolos, sessao...)
+ * Retorna null para URL desconhecida (redireciona para /pacientes).
+ */
+export function parseVetRoute(pathname) {
+  const path = pathname.replace(/\/+$/, '') || '/'
+  if (path === '/pacientes') return { tab: 'pacientes' }
+  if (path === '/pacientes/novo') return { tab: 'cadastro' }
+  if (path === '/paliativos') return { tab: 'paliativos' }
+  if (path === '/clinica') return { tab: 'clinica' }
+  const match = matchPath('/pacientes/:petId/:aba?', path)
+  if (match && /^\d+$/.test(match.params.petId)) {
+    const aba = match.params.aba || 'dashboard'
+    if (PET_TABS.includes(aba)) return { tab: 'prontuario', petId: Number(match.params.petId), aba }
+  }
+  return null
+}
 
 function VetDashboard({ user, onLogout }) {
   const [pets, setPets] = useState([])
   const [tutors, setTutors] = useState([])
   const [clinics, setClinics] = useState([])
-  const [selectedPet, setSelectedPet] = useState(null)
-  const [activeTab, setActiveTab] = useState('pacientes')
+  const [loaded, setLoaded] = useState(false)
+  const [lastPetId, setLastPetId] = useState(null)
+  const [photoFile, setPhotoFile] = useState(null)
   const [breeds, setBreeds] = useState({ dogs: [], cats: [] })
 
   // Forms
@@ -20,9 +51,39 @@ function VetDashboard({ user, onLogout }) {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
+  // Tela atual vem da URL (voltar do navegador e F5 funcionam)
+  const location = useLocation()
+  const navigate = useNavigate()
+  const route = parseVetRoute(location.pathname)
+  const activeTab = route?.tab
+  const selectedPet = route?.petId ? pets.find(p => p.id === route.petId) : null
+
   useEffect(() => {
     loadAll()
   }, [])
+
+  useEffect(() => {
+    if (route?.petId) setLastPetId(route.petId)
+  }, [route?.petId])
+
+  useEffect(() => {
+    window.scrollTo({ top: 0 })
+  }, [activeTab, route?.petId])
+
+  const goTo = (tab) => {
+    const paths = {
+      pacientes: '/pacientes',
+      cadastro: '/pacientes/novo',
+      paliativos: '/paliativos',
+      clinica: '/clinica',
+      prontuario: `/pacientes/${lastPetId}`,
+    }
+    navigate(paths[tab])
+  }
+
+  const goToPetTab = (petId, aba) => {
+    navigate(aba === 'dashboard' ? `/pacientes/${petId}` : `/pacientes/${petId}/${aba}`)
+  }
 
   const loadAll = async () => {
     try {
@@ -31,6 +92,7 @@ function VetDashboard({ user, onLogout }) {
       ])
       setPets(p.data); setTutors(t.data); setClinics(c.data); setBreeds(b.data)
     } catch (err) { console.error(err) }
+    finally { setLoaded(true) }
   }
 
   const currentBreeds = petForm.species.includes('gato') ? breeds.cats : breeds.dogs
@@ -38,7 +100,7 @@ function VetDashboard({ user, onLogout }) {
   const handlePetSubmit = async (e) => {
     e.preventDefault(); setError('')
     try {
-      await api.post('/pets/', {
+      const res = await api.post('/pets/', {
         ...petForm,
         weight: parseFloat(petForm.weight),
         age_years: petForm.age_years ? parseInt(petForm.age_years) : null,
@@ -47,10 +109,19 @@ function VetDashboard({ user, onLogout }) {
         clinic_id: petForm.clinic_id ? parseInt(petForm.clinic_id) : null,
         treatment_start_date: petForm.treatment_start_date || null,
       })
+      // Foto e opcional: se falhar, o pet ja foi cadastrado e so avisamos
+      if (photoFile) {
+        try {
+          await uploadPetPhoto(api, res.data.id, photoFile)
+        } catch (photoErr) {
+          setError(`Cadastrado, mas a foto nao foi enviada: ${photoErr.response ? getErrorMessage(photoErr) : photoErr.message}`)
+        }
+        setPhotoFile(null)
+      }
       setPetForm({ name: '', species: 'cao', breed: '', weight: '', age_years: '', age_months: '', cancer_type: '', treatment_start_date: '', tutor_id: '', clinic_id: '' })
       setSuccess('Paciente cadastrado!'); setTimeout(() => setSuccess(''), 3000)
       loadAll()
-    } catch (err) { setError(err.response?.data?.detail || 'Erro') }
+    } catch (err) { setError(getErrorMessage(err)) }
   }
 
   const handleClinicSubmit = async (e) => {
@@ -60,26 +131,32 @@ function VetDashboard({ user, onLogout }) {
       setClinicForm({ name: '', address: '', phone: '' })
       setSuccess('Clinica cadastrada!'); setTimeout(() => setSuccess(''), 3000)
       loadAll()
-    } catch (err) { setError(err.response?.data?.detail || 'Erro') }
+    } catch (err) { setError(getErrorMessage(err)) }
   }
+
+  if (!route) return <Navigate to="/pacientes" replace />
 
   return (
     <div className="container">
-      <div className="header">
-        <h1>OncoPet</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span className="role-badge vet">Veterinario</span>
-          <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{user.full_name}</span>
-          <button className="danger" onClick={onLogout} style={{ padding: '8px 16px', fontSize: 12 }}>Sair</button>
-        </div>
-      </div>
+      <AppHeader role="vet" userName={user.full_name} onLogout={onLogout} />
 
-      <div className="nav-tabs">
-        <button className={activeTab === 'pacientes' ? 'active' : ''} onClick={() => setActiveTab('pacientes')}>Pacientes</button>
-        <button className={activeTab === 'cadastro' ? 'active' : ''} onClick={() => setActiveTab('cadastro')}>Novo Paciente</button>
-        <button className={activeTab === 'clinica' ? 'active' : ''} onClick={() => setActiveTab('clinica')}>Clinica</button>
-        <button className={activeTab === 'prontuario' ? 'active' : ''} onClick={() => setActiveTab('prontuario')} disabled={!selectedPet}>Prontuario</button>
-      </div>
+      <nav className="nav-tabs">
+        <button className={activeTab === 'pacientes' ? 'active' : ''} onClick={() => goTo('pacientes')}>
+          <PawPrint /><span className="label-long">Pacientes</span><span className="label-short">Pacientes</span>
+        </button>
+        <button className={activeTab === 'paliativos' ? 'active' : ''} onClick={() => goTo('paliativos')}>
+          <HeartPulse /><span className="label-long">Paliativos</span><span className="label-short">Paliativos</span>
+        </button>
+        <button className={activeTab === 'cadastro' ? 'active' : ''} onClick={() => goTo('cadastro')}>
+          <CirclePlus /><span className="label-long">Novo Paciente</span><span className="label-short">Novo</span>
+        </button>
+        <button className={activeTab === 'clinica' ? 'active' : ''} onClick={() => goTo('clinica')}>
+          <Building2 /><span className="label-long">Clinica</span><span className="label-short">Clinica</span>
+        </button>
+        <button className={activeTab === 'prontuario' ? 'active' : ''} onClick={() => goTo('prontuario')} disabled={!lastPetId}>
+          <ClipboardList /><span className="label-long">Prontuario</span><span className="label-short">Prontuario</span>
+        </button>
+      </nav>
 
       {error && <p className="error">{error}</p>}
       {success && <div className="success-msg">{success}</div>}
@@ -94,9 +171,9 @@ function VetDashboard({ user, onLogout }) {
             </div>
           ) : (
             pets.map(pet => (
-              <div key={pet.id} className={`pet-card ${selectedPet?.id === pet.id ? 'selected' : ''}`}
-                onClick={() => { setSelectedPet(pet); setActiveTab('prontuario') }}>
-                <div className="pet-avatar">{pet.species.includes('gato') ? 'G' : 'C'}</div>
+              <div key={pet.id} className={`pet-card ${lastPetId === pet.id ? 'selected' : ''}`}
+                onClick={() => goToPetTab(pet.id, 'dashboard')}>
+                <PetAvatar pet={pet} />
                 <div style={{ flex: 1 }}>
                   <strong style={{ fontSize: 16 }}>{pet.name}</strong>
                   <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>
@@ -112,11 +189,17 @@ function VetDashboard({ user, onLogout }) {
         </div>
       )}
 
+      {/* Cuidados paliativos (RF-06) */}
+      {activeTab === 'paliativos' && (
+        <PalliativeDashboard onOpenPet={(petId) => goToPetTab(petId, 'dashboard')} />
+      )}
+
       {/* Cadastro de paciente */}
       {activeTab === 'cadastro' && (
         <div className="card">
           <h3 style={{ marginBottom: 24 }}>Cadastrar paciente</h3>
           <form onSubmit={handlePetSubmit}>
+            <PhotoField file={photoFile} onChange={setPhotoFile} />
             <div className="grid-2">
               <div><label>Nome</label><input value={petForm.name} onChange={e => setPetForm({...petForm, name: e.target.value})} required /></div>
               <div><label>Especie</label>
@@ -132,11 +215,11 @@ function VetDashboard({ user, onLogout }) {
                   {currentBreeds.map(b => <option key={b} value={b}>{b}</option>)}
                 </select>
               </div>
-              <div><label>Peso (kg)</label><input type="number" step="0.1" value={petForm.weight} onChange={e => setPetForm({...petForm, weight: e.target.value})} required /></div>
+              <div><label>Peso (kg)</label><input type="number" step="0.1" min="0.1" max="150" value={petForm.weight} onChange={e => setPetForm({...petForm, weight: e.target.value})} required /></div>
             </div>
             <div className="grid-3">
-              <div><label>Idade (anos)</label><input type="number" value={petForm.age_years} onChange={e => setPetForm({...petForm, age_years: e.target.value})} /></div>
-              <div><label>Idade (meses)</label><input type="number" value={petForm.age_months} onChange={e => setPetForm({...petForm, age_months: e.target.value})} /></div>
+              <div><label>Idade (anos)</label><input type="number" min="0" max="40" value={petForm.age_years} onChange={e => setPetForm({...petForm, age_years: e.target.value})} /></div>
+              <div><label>Idade (meses)</label><input type="number" min="0" max="11" value={petForm.age_months} onChange={e => setPetForm({...petForm, age_months: e.target.value})} /></div>
               <div><label>Tipo de Cancer</label><input value={petForm.cancer_type} onChange={e => setPetForm({...petForm, cancer_type: e.target.value})} /></div>
             </div>
             <div className="grid-3">
@@ -188,7 +271,19 @@ function VetDashboard({ user, onLogout }) {
 
       {/* Prontuario */}
       {activeTab === 'prontuario' && selectedPet && (
-        <PetDetail pet={selectedPet} onUpdated={loadAll} />
+        <PetDetail
+          pet={selectedPet}
+          onUpdated={loadAll}
+          subTab={route.aba}
+          onSubTabChange={(aba) => goToPetTab(selectedPet.id, aba)}
+        />
+      )}
+      {activeTab === 'prontuario' && !selectedPet && loaded && (
+        <div className="card empty-state">
+          <h3>Paciente nao encontrado</h3>
+          <p>Ele pode ter sido removido ou nao esta atribuido a voce.</p>
+          <button className="primary" style={{ marginTop: 16 }} onClick={() => goTo('pacientes')}>Ver pacientes</button>
+        </div>
       )}
     </div>
   )

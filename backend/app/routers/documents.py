@@ -1,4 +1,7 @@
-"""Documentos (exames, laudos) - somente VET pode criar."""
+"""Documentos (exames, laudos) - somente o VET responsavel pode criar.
+
+So o tutor dono e o vet responsavel pelo pet podem ver os documentos.
+"""
 
 from typing import List
 from fastapi import APIRouter, Depends
@@ -8,6 +11,7 @@ from ..database import get_db
 from ..models import Document, User
 from ..schemas import DocumentCreate, DocumentResponse
 from ..auth import get_current_user, require_vet
+from .pets import ensure_pet_access, get_pet_or_404
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
@@ -15,6 +19,7 @@ router = APIRouter(prefix="/api/documents", tags=["documents"])
 @router.post("/", response_model=DocumentResponse, status_code=201)
 def create_document(data: DocumentCreate, db: Session = Depends(get_db), user: User = Depends(require_vet)):
     from datetime import date as date_type
+    ensure_pet_access(get_pet_or_404(db, data.pet_id), user)
     doc_data = data.model_dump()
     if doc_data.get("date"):
         doc_data["date"] = date_type.fromisoformat(doc_data["date"])
@@ -31,7 +36,8 @@ def create_document(data: DocumentCreate, db: Session = Depends(get_db), user: U
 
 
 @router.get("/pet/{pet_id}", response_model=List[DocumentResponse])
-def list_documents(pet_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
+def list_documents(pet_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    ensure_pet_access(get_pet_or_404(db, pet_id), user)
     docs = db.query(Document).filter(Document.pet_id == pet_id).order_by(Document.created_at.desc()).all()
     results = []
     for d in docs:

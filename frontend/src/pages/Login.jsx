@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import api from '../api'
+import api, { getErrorMessage } from '../api'
+import { LogoMark } from '../components/Logo'
 
 function Login({ onLogin }) {
   const [isRegister, setIsRegister] = useState(false)
@@ -31,13 +32,14 @@ function Login({ onLogin }) {
         onLogin(res.data.access_token, res.data.user)
       }
     } catch (err) {
-      setError(err.response?.data?.detail || 'Erro de conexao')
+      setError(getErrorMessage(err, 'Erro de conexao'))
     }
   }
 
   return (
     <div className="login-container">
       <div className="login-box">
+        <div className="login-logo"><LogoMark size={96} title="" /></div>
         <h2>OncoPet</h2>
         <p style={{ textAlign: 'center', marginBottom: 32, color: 'var(--text-secondary)', fontSize: 14 }}>
           Gestao de Oncologia Veterinaria

@@ -10,6 +10,7 @@ from ..database import get_db
 from ..models import Reminder, Pet, User
 from ..schemas import ReminderCreate, ReminderUpdate, ReminderResponse
 from ..auth import get_current_user, require_vet
+from .pets import ensure_pet_access, get_pet_or_404
 
 router = APIRouter(prefix="/api/reminders", tags=["reminders"])
 
@@ -17,9 +18,7 @@ router = APIRouter(prefix="/api/reminders", tags=["reminders"])
 @router.post("/", response_model=ReminderResponse, status_code=201)
 def create_reminder(data: ReminderCreate, db: Session = Depends(get_db), user: User = Depends(require_vet)):
     """Vet cria lembrete para um pet (tutor vera a notificacao)."""
-    pet = db.query(Pet).filter(Pet.id == data.pet_id).first()
-    if not pet:
-        raise HTTPException(status_code=404, detail="Pet nao encontrado")
+    ensure_pet_access(get_pet_or_404(db, data.pet_id), user)
 
     reminder = Reminder(**data.model_dump(), created_by=user.id)
     db.add(reminder)
@@ -29,8 +28,9 @@ def create_reminder(data: ReminderCreate, db: Session = Depends(get_db), user: U
 
 
 @router.get("/pet/{pet_id}", response_model=List[ReminderResponse])
-def list_reminders_by_pet(pet_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
+def list_reminders_by_pet(pet_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     """Lista todos os lembretes de um pet (agenda)."""
+    ensure_pet_access(get_pet_or_404(db, pet_id), user)
     return (
         db.query(Reminder)
         .filter(Reminder.pet_id == pet_id)
@@ -110,6 +110,7 @@ def update_reminder(
     reminder = db.query(Reminder).filter(Reminder.id == reminder_id).first()
     if not reminder:
         raise HTTPException(status_code=404, detail="Lembrete nao encontrado")
+    ensure_pet_access(reminder.pet, user)
 
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(reminder, field, value)

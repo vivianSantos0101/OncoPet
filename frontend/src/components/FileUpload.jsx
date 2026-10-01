@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import api from '../api'
+import api, { getErrorMessage } from '../api'
 
 function FileUpload({ onUploaded }) {
   const [isDragging, setIsDragging] = useState(false)
@@ -18,7 +18,7 @@ function FileUpload({ onUploaded }) {
       })
       onUploaded(res.data)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Erro no upload')
+      setError(getErrorMessage(err, 'Erro no upload'))
     } finally {
       setUploading(false)
     }

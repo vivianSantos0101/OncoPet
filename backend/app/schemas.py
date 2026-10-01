@@ -1,8 +1,8 @@
 """Pydantic schemas v3."""
 
 from datetime import date
-from typing import Optional, List
-from pydantic import BaseModel
+from typing import Optional, List, Literal
+from pydantic import BaseModel, Field
 
 
 # ─── Auth ─────────────────────────────────────────────
@@ -54,13 +54,19 @@ class ClinicResponse(ClinicCreate):
 
 # ─── Pet ──────────────────────────────────────────────
 
+# Limites de validacao (idade/peso nao podem ser negativos)
+MAX_AGE_YEARS = 40
+MAX_WEIGHT_KG = 150
+
+
+
 class PetCreate(BaseModel):
     name: str
     species: str
     breed: str
-    weight: float
-    age_years: Optional[int] = None
-    age_months: Optional[int] = None
+    weight: float = Field(gt=0, le=MAX_WEIGHT_KG)
+    age_years: Optional[int] = Field(default=None, ge=0, le=MAX_AGE_YEARS)
+    age_months: Optional[int] = Field(default=None, ge=0, le=11)
     photo_url: Optional[str] = None
     cancer_type: Optional[str] = None
     treatment_start_date: Optional[date] = None
@@ -73,9 +79,9 @@ class PetUpdate(BaseModel):
     name: Optional[str] = None
     species: Optional[str] = None
     breed: Optional[str] = None
-    weight: Optional[float] = None
-    age_years: Optional[int] = None
-    age_months: Optional[int] = None
+    weight: Optional[float] = Field(default=None, gt=0, le=MAX_WEIGHT_KG)
+    age_years: Optional[int] = Field(default=None, ge=0, le=MAX_AGE_YEARS)
+    age_months: Optional[int] = Field(default=None, ge=0, le=11)
     photo_url: Optional[str] = None
     cancer_type: Optional[str] = None
     treatment_start_date: Optional[date] = None
@@ -105,21 +111,69 @@ class PetResponse(BaseModel):
         from_attributes = True
 
 
+# ─── Protocolo de quimio (vet only) ──────────────────
+
+ProtocolStatus = Literal["ativo", "concluido", "suspenso"]
+
+
+class ProtocolCreate(BaseModel):
+    pet_id: int
+    name: str
+    drug_name: Optional[str] = None
+    dose_mg_m2: Optional[float] = Field(default=None, gt=0)
+    planned_sessions: int = Field(gt=0)
+    interval_days: Optional[int] = Field(default=None, gt=0)
+    start_date: date
+    notes: Optional[str] = None
+
+
+class ProtocolUpdate(BaseModel):
+    name: Optional[str] = None
+    drug_name: Optional[str] = None
+    dose_mg_m2: Optional[float] = Field(default=None, gt=0)
+    planned_sessions: Optional[int] = Field(default=None, gt=0)
+    interval_days: Optional[int] = Field(default=None, gt=0)
+    status: Optional[ProtocolStatus] = None
+    notes: Optional[str] = None
+
+
+class ProtocolResponse(BaseModel):
+    id: int
+    pet_id: int
+    name: str
+    drug_name: Optional[str] = None
+    dose_mg_m2: Optional[float] = None
+    planned_sessions: int
+    interval_days: Optional[int] = None
+    start_date: date
+    status: ProtocolStatus
+    notes: Optional[str] = None
+    # Progresso calculado
+    executed_sessions: int
+    remaining_sessions: int
+    progress_percent: float
+    last_session_date: Optional[date] = None
+    next_session_date: Optional[date] = None
+    is_overdue: bool
+
+
 # ─── Session (vet only) ──────────────────────────────
 
 class SessionCreate(BaseModel):
     pet_id: int
+    protocol_id: Optional[int] = None
     date: date
     session_type: str = "quimioterapia"
     drug_name: Optional[str] = None
-    dose_mg_m2: Optional[float] = None
-    weight_at_session: float
+    dose_mg_m2: Optional[float] = Field(default=None, gt=0)
+    weight_at_session: float = Field(gt=0, le=MAX_WEIGHT_KG)
     notes: Optional[str] = None
 
 
 class SessionResponse(BaseModel):
     id: int
     pet_id: int
+    protocol_id: Optional[int] = None
     date: date
     session_type: str
     drug_name: Optional[str] = None
@@ -132,13 +186,22 @@ class SessionResponse(BaseModel):
         from_attributes = True
 
 
-# ─── Record (tutor only) ─────────────────────────────
+# ─── Diario do tutor (MongoDB, RF-02/RF-03) ─────────
+
+# Sintomas que o tutor pode marcar; outros vao em texto livre (other_symptoms)
+Symptom = Literal[
+    "vomito", "diarreia", "letargia", "inapetencia",
+    "febre", "tosse", "dispneia", "lesao_pele",
+]
+
 
 class RecordCreate(BaseModel):
     pet_id: int
     date: date
-    weight: Optional[float] = None
-    symptoms: Optional[str] = None
+    weight: Optional[float] = Field(default=None, gt=0, le=MAX_WEIGHT_KG)
+    symptoms: List[Symptom] = Field(default_factory=list)
+    other_symptoms: Optional[str] = None
+    pain_score: Optional[int] = Field(default=None, ge=0, le=10)  # escala de dor 0-10
     general_status: Optional[str] = None
     appetite: Optional[str] = None
     energy_level: Optional[str] = None
@@ -147,19 +210,18 @@ class RecordCreate(BaseModel):
 
 
 class RecordResponse(BaseModel):
-    id: int
+    id: str  # ObjectId do MongoDB
     pet_id: int
     date: date
     weight: Optional[float] = None
-    symptoms: Optional[str] = None
+    symptoms: List[str] = Field(default_factory=list)
+    other_symptoms: Optional[str] = None
+    pain_score: Optional[int] = None
     general_status: Optional[str] = None
     appetite: Optional[str] = None
     energy_level: Optional[str] = None
     photo_url: Optional[str] = None
     notes: Optional[str] = None
-
-    class Config:
-        from_attributes = True
 
 
 # ─── Document (vet only) ─────────────────────────────
@@ -189,9 +251,9 @@ class DocumentResponse(BaseModel):
 # ─── Dose Calculator ─────────────────────────────────
 
 class DoseCalculation(BaseModel):
-    weight: float
+    weight: float = Field(gt=0, le=MAX_WEIGHT_KG)
     species: str
-    dose_mg_m2: float
+    dose_mg_m2: float = Field(gt=0)
 
 
 class DoseResult(BaseModel):
@@ -262,3 +324,128 @@ class ReminderResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ─── Estatisticas (RF-05) ─────────────────────────────
+
+class WeightStatPoint(BaseModel):
+    date: date
+    weight: float
+    moving_average: float
+
+
+class PainStatPoint(BaseModel):
+    date: date
+    pain: int
+    moving_average: float
+
+
+class WeightSummary(BaseModel):
+    first: float
+    last: float
+    min: float
+    max: float
+    change_kg: float
+    change_percent: float
+    trend_kg_per_week: Optional[float] = None
+    relevant_loss: bool  # perda >= 5% desde o inicio
+
+
+class PainSummary(BaseModel):
+    mean: float
+    last: int
+    max: int
+    recent_mean: Optional[float] = None     # ultimas 4 semanas
+    previous_mean: Optional[float] = None   # 4 semanas anteriores
+    recent_change: Optional[float] = None
+    trend_per_week: Optional[float] = None
+    severe_percent: float                   # % dos registros com dor >= 7
+
+
+class SymptomCount(BaseModel):
+    symptom: str
+    count: int
+    percent: float
+
+
+class PetAnalytics(BaseModel):
+    pet_id: int
+    reference_date: date
+    logs_count: int
+    weight_points: List[WeightStatPoint]
+    weight: Optional[WeightSummary] = None
+    pain_points: List[PainStatPoint]
+    pain: Optional[PainSummary] = None
+    symptoms: List[SymptomCount]
+
+# ─── Cuidados paliativos (RF-06) ─────────────────────
+
+AlertLevel = Literal["estavel", "atencao", "critico"]
+Tolerance = Literal["boa", "moderada", "ruim", "sem_dados"]
+
+
+class PalliativeAlert(BaseModel):
+    level: AlertLevel
+    code: str
+    message: str
+
+
+class PostSessionGroup(BaseModel):
+    logs: int
+    pain_mean: Optional[float] = None
+    symptom_percent: Optional[float] = None
+
+
+class PostSessionEffect(BaseModel):
+    window_days: int
+    after_session: PostSessionGroup      # registros do 1o ao 3o dia apos uma sessao
+    other_days: PostSessionGroup
+    pain_difference: Optional[float] = None
+    symptom_difference: Optional[float] = None
+
+
+class SessionTolerance(BaseModel):
+    date: date
+    drug_name: Optional[str] = None
+    logs: int
+    max_pain: Optional[int] = None
+    symptom_days: int
+    symptoms: List[str]
+    tolerance: Tolerance
+
+
+class PalliativePatient(BaseModel):
+    pet_id: int
+    name: str
+    species: str
+    breed: str
+    photo_url: Optional[str] = None
+    cancer_type: Optional[str] = None
+    tutor_name: Optional[str] = None
+    level: AlertLevel
+    alerts: List[PalliativeAlert]
+    last_pain: Optional[int] = None
+    recent_pain_mean: Optional[float] = None
+    pain_recent_change: Optional[float] = None
+    weight_change_percent: Optional[float] = None
+    days_since_last_log: Optional[int] = None
+    sessions_count: int
+    pain_after_session: Optional[float] = None
+    pain_other_days: Optional[float] = None
+
+
+class PalliativeOverview(BaseModel):
+    reference_date: date
+    critico: int
+    atencao: int
+    estavel: int
+    patients: List[PalliativePatient]
+
+
+class PetPalliative(BaseModel):
+    pet_id: int
+    reference_date: date
+    level: AlertLevel
+    alerts: List[PalliativeAlert]
+    effect: Optional[PostSessionEffect] = None
+    sessions: List[SessionTolerance]

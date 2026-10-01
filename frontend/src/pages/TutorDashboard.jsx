@@ -1,13 +1,47 @@
 import { useState, useEffect } from 'react'
-import api from '../api'
+import api, { getErrorMessage } from '../api'
 import Notifications from '../components/Notifications'
+import { useLocation, useNavigate, matchPath, Navigate } from 'react-router-dom'
+import { PawPrint, CirclePlus, NotebookPen, Activity, CalendarDays } from 'lucide-react'
 import PetAgenda from '../components/PetAgenda'
+import AppHeader from '../components/AppHeader'
+import ProtocolPanel from '../components/ProtocolPanel'
+import SymptomPicker from '../components/SymptomPicker'
+import PainScale from '../components/PainScale'
+import DailyLogList from '../components/DailyLogList'
+import PetAvatar from '../components/PetAvatar'
+import ReportButton from '../components/ReportButton'
+import PhotoField from '../components/PhotoField'
+import { uploadPetPhoto } from '../image'
+import { todayISO } from '../dates'
+
+const PET_TABS = ['diario', 'tratamento', 'agenda']
+
+/**
+ * Rotas do tutor:
+ *   /animais               meus animais
+ *   /animais/novo          cadastro
+ *   /animais/:petId/:aba   diario, tratamento ou agenda (sem aba abre o diario)
+ * Retorna null para URL desconhecida (redireciona para /animais).
+ */
+export function parseTutorRoute(pathname) {
+  const path = pathname.replace(/\/+$/, '') || '/'
+  if (path === '/animais') return { tab: 'pets' }
+  if (path === '/animais/novo') return { tab: 'novo' }
+  const match = matchPath('/animais/:petId/:aba?', path)
+  if (match && /^\d+$/.test(match.params.petId)) {
+    const aba = match.params.aba || 'diario'
+    if (PET_TABS.includes(aba)) return { tab: aba, petId: Number(match.params.petId) }
+  }
+  return null
+}
 
 function TutorDashboard({ user, onLogout }) {
   const [pets, setPets] = useState([])
-  const [selectedPet, setSelectedPet] = useState(null)
   const [records, setRecords] = useState([])
-  const [activeTab, setActiveTab] = useState('pets')
+  const [photoFile, setPhotoFile] = useState(null)
+  const [loaded, setLoaded] = useState(false)
+  const [lastPetId, setLastPetId] = useState(null)
   const [breeds, setBreeds] = useState({ dogs: [], cats: [] })
   const [vets, setVets] = useState([])
   const [clinics, setClinics] = useState([])
@@ -19,8 +53,8 @@ function TutorDashboard({ user, onLogout }) {
     treatment_start_date: '', vet_id: '', clinic_id: '',
   })
   const [recordForm, setRecordForm] = useState({
-    date: new Date().toISOString().split('T')[0],
-    weight: '', symptoms: '', general_status: '',
+    date: todayISO(),
+    weight: '', symptoms: [], other_symptoms: '', pain_score: null, general_status: '',
     appetite: '', energy_level: '', notes: '',
   })
   const [error, setError] = useState('')
@@ -34,8 +68,40 @@ function TutorDashboard({ user, onLogout }) {
   }, [])
 
   const loadPets = async () => {
-    const res = await api.get('/pets/')
-    setPets(res.data)
+    try {
+      const res = await api.get('/pets/')
+      setPets(res.data)
+    } finally {
+      setLoaded(true)
+    }
+  }
+
+  // Tela atual vem da URL (voltar do navegador e F5 funcionam)
+  const location = useLocation()
+  const navigate = useNavigate()
+  const route = parseTutorRoute(location.pathname)
+  const activeTab = route?.tab
+  const selectedPet = route?.petId ? pets.find(p => p.id === route.petId) : null
+
+  useEffect(() => {
+    if (route?.petId) setLastPetId(route.petId)
+  }, [route?.petId])
+
+  useEffect(() => {
+    window.scrollTo({ top: 0 })
+  }, [activeTab, route?.petId])
+
+  // Ao abrir um pet (clique ou URL), carrega o diario e sugere o ultimo peso
+  useEffect(() => {
+    if (!selectedPet) return
+    loadRecords(selectedPet.id)
+    setRecordForm(form => ({ ...form, weight: String(selectedPet.weight) }))
+  }, [selectedPet?.id])
+
+  const goTo = (tab) => {
+    if (tab === 'pets') navigate('/animais')
+    else if (tab === 'novo') navigate('/animais/novo')
+    else navigate(`/animais/${lastPetId}/${tab}`)
   }
 
   const loadRecords = async (petId) => {
@@ -43,12 +109,7 @@ function TutorDashboard({ user, onLogout }) {
     setRecords(res.data)
   }
 
-  const selectPet = (pet) => {
-    setSelectedPet(pet)
-    loadRecords(pet.id)
-    setRecordForm({ ...recordForm, weight: String(pet.weight) })
-    setActiveTab('diario')
-  }
+  const selectPet = (pet) => navigate(`/animais/${pet.id}/diario`)
 
   const currentBreeds = petForm.species.includes('gato') ? breeds.cats : breeds.dogs
 
@@ -56,7 +117,7 @@ function TutorDashboard({ user, onLogout }) {
     e.preventDefault()
     setError('')
     try {
-      await api.post('/pets/', {
+      const res = await api.post('/pets/', {
         ...petForm,
         weight: parseFloat(petForm.weight),
         age_years: petForm.age_years ? parseInt(petForm.age_years) : null,
@@ -65,12 +126,21 @@ function TutorDashboard({ user, onLogout }) {
         clinic_id: petForm.clinic_id ? parseInt(petForm.clinic_id) : null,
         treatment_start_date: petForm.treatment_start_date || null,
       })
+      // Foto e opcional: se falhar, o pet ja foi cadastrado e so avisamos
+      if (photoFile) {
+        try {
+          await uploadPetPhoto(api, res.data.id, photoFile)
+        } catch (photoErr) {
+          setError(`Cadastrado, mas a foto nao foi enviada: ${photoErr.response ? getErrorMessage(photoErr) : photoErr.message}`)
+        }
+        setPhotoFile(null)
+      }
       setPetForm({ name: '', species: 'cao', breed: '', weight: '', age_years: '', age_months: '', cancer_type: '', treatment_start_date: '', vet_id: '', clinic_id: '' })
       setSuccess('Animal cadastrado!')
       setTimeout(() => setSuccess(''), 3000)
       loadPets()
     } catch (err) {
-      setError(err.response?.data?.detail || 'Erro')
+      setError(getErrorMessage(err))
     }
   }
 
@@ -82,7 +152,9 @@ function TutorDashboard({ user, onLogout }) {
         pet_id: selectedPet.id,
         date: recordForm.date,
         weight: recordForm.weight ? parseFloat(recordForm.weight) : null,
-        symptoms: recordForm.symptoms || null,
+        symptoms: recordForm.symptoms,
+        other_symptoms: recordForm.other_symptoms || null,
+        pain_score: recordForm.pain_score,
         general_status: recordForm.general_status || null,
         appetite: recordForm.appetite || null,
         energy_level: recordForm.energy_level || null,
@@ -90,40 +162,38 @@ function TutorDashboard({ user, onLogout }) {
       })
       setSuccess('Registro salvo!')
       setTimeout(() => setSuccess(''), 3000)
-      setRecordForm({ ...recordForm, symptoms: '', general_status: '', appetite: '', energy_level: '', notes: '' })
+      setRecordForm({ ...recordForm, symptoms: [], other_symptoms: '', pain_score: null, general_status: '', appetite: '', energy_level: '', notes: '' })
       loadRecords(selectedPet.id)
       loadPets()
     } catch (err) {
-      setError(err.response?.data?.detail || 'Erro')
+      setError(getErrorMessage(err))
     }
   }
+
+  if (!route) return <Navigate to="/animais" replace />
 
   return (
     <div className="container">
       <Notifications />
-      <div className="header">
-        <h1>OncoPet</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span className="role-badge tutor">Tutor</span>
-          <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{user.full_name}</span>
-          <button className="danger" onClick={onLogout} style={{ padding: '8px 16px', fontSize: 12 }}>Sair</button>
-        </div>
-      </div>
+      <AppHeader role="tutor" userName={user.full_name} onLogout={onLogout} />
 
-      <div className="nav-tabs">
-        <button className={activeTab === 'pets' ? 'active' : ''} onClick={() => setActiveTab('pets')}>
-          Meus Animais
+      <nav className="nav-tabs">
+        <button className={activeTab === 'pets' ? 'active' : ''} onClick={() => goTo('pets')}>
+          <PawPrint /><span className="label-long">Meus Animais</span><span className="label-short">Animais</span>
         </button>
-        <button className={activeTab === 'novo' ? 'active' : ''} onClick={() => setActiveTab('novo')}>
-          Cadastrar Animal
+        <button className={activeTab === 'novo' ? 'active' : ''} onClick={() => goTo('novo')}>
+          <CirclePlus /><span className="label-long">Cadastrar Animal</span><span className="label-short">Novo</span>
         </button>
-        <button className={activeTab === 'diario' ? 'active' : ''} onClick={() => setActiveTab('diario')} disabled={!selectedPet}>
-          Diario
+        <button className={activeTab === 'diario' ? 'active' : ''} onClick={() => goTo('diario')} disabled={!lastPetId}>
+          <NotebookPen /><span className="label-long">Diario</span><span className="label-short">Diario</span>
         </button>
-        <button className={activeTab === 'agenda' ? 'active' : ''} onClick={() => setActiveTab('agenda')} disabled={!selectedPet}>
-          Agenda
+        <button className={activeTab === 'tratamento' ? 'active' : ''} onClick={() => goTo('tratamento')} disabled={!lastPetId}>
+          <Activity /><span className="label-long">Tratamento</span><span className="label-short">Tratamento</span>
         </button>
-      </div>
+        <button className={activeTab === 'agenda' ? 'active' : ''} onClick={() => goTo('agenda')} disabled={!lastPetId}>
+          <CalendarDays /><span className="label-long">Agenda</span><span className="label-short">Agenda</span>
+        </button>
+      </nav>
 
       {error && <p className="error">{error}</p>}
       {success && <div className="success-msg">{success}</div>}
@@ -138,8 +208,8 @@ function TutorDashboard({ user, onLogout }) {
             </div>
           ) : (
             pets.map(pet => (
-              <div key={pet.id} className={`pet-card ${selectedPet?.id === pet.id ? 'selected' : ''}`} onClick={() => selectPet(pet)}>
-                <div className="pet-avatar">{pet.species.includes('gato') ? 'G' : 'C'}</div>
+              <div key={pet.id} className={`pet-card ${lastPetId === pet.id ? 'selected' : ''}`} onClick={() => selectPet(pet)}>
+                <PetAvatar pet={pet} />
                 <div style={{ flex: 1 }}>
                   <strong style={{ fontSize: 16 }}>{pet.name}</strong>
                   <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>
@@ -159,6 +229,7 @@ function TutorDashboard({ user, onLogout }) {
         <div className="card">
           <h3 style={{ marginBottom: 24 }}>Cadastrar novo animal</h3>
           <form onSubmit={handlePetSubmit}>
+            <PhotoField file={photoFile} onChange={setPhotoFile} />
             <div className="grid-2">
               <div><label>Nome</label><input value={petForm.name} onChange={e => setPetForm({...petForm, name: e.target.value})} required /></div>
               <div><label>Especie</label>
@@ -174,11 +245,11 @@ function TutorDashboard({ user, onLogout }) {
                   {currentBreeds.map(b => <option key={b} value={b}>{b}</option>)}
                 </select>
               </div>
-              <div><label>Peso (kg)</label><input type="number" step="0.1" value={petForm.weight} onChange={e => setPetForm({...petForm, weight: e.target.value})} required /></div>
+              <div><label>Peso (kg)</label><input type="number" step="0.1" min="0.1" max="150" value={petForm.weight} onChange={e => setPetForm({...petForm, weight: e.target.value})} required /></div>
             </div>
             <div className="grid-3">
-              <div><label>Idade (anos)</label><input type="number" value={petForm.age_years} onChange={e => setPetForm({...petForm, age_years: e.target.value})} /></div>
-              <div><label>Idade (meses)</label><input type="number" value={petForm.age_months} onChange={e => setPetForm({...petForm, age_months: e.target.value})} /></div>
+              <div><label>Idade (anos)</label><input type="number" min="0" max="40" value={petForm.age_years} onChange={e => setPetForm({...petForm, age_years: e.target.value})} /></div>
+              <div><label>Idade (meses)</label><input type="number" min="0" max="11" value={petForm.age_months} onChange={e => setPetForm({...petForm, age_months: e.target.value})} /></div>
               <div><label>Tipo de Cancer</label><input value={petForm.cancer_type} onChange={e => setPetForm({...petForm, cancer_type: e.target.value})} /></div>
             </div>
             <div className="grid-3">
@@ -204,16 +275,15 @@ function TutorDashboard({ user, onLogout }) {
       {/* Diario do pet */}
       {activeTab === 'diario' && selectedPet && (
         <div>
-          <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div className="pet-avatar" style={{ width: 60, height: 60, fontSize: 16 }}>
-              {selectedPet.species.includes('gato') ? 'G' : 'C'}
-            </div>
-            <div>
+          <div className="card pet-header" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <PetAvatar pet={selectedPet} size={64} radius={20} editable onChanged={loadPets} onError={setError} />
+            <div style={{ flex: 1, minWidth: 0 }}>
               <h3>{selectedPet.name}</h3>
               <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
                 {selectedPet.breed} - {selectedPet.weight}kg - SC: {selectedPet.body_surface_area} m2
               </p>
             </div>
+            <ReportButton petId={selectedPet.id} onError={setError} />
           </div>
 
           <div className="card">
@@ -221,7 +291,7 @@ function TutorDashboard({ user, onLogout }) {
             <form onSubmit={handleRecordSubmit}>
               <div className="grid-3">
                 <div><label>Data</label><input type="date" value={recordForm.date} onChange={e => setRecordForm({...recordForm, date: e.target.value})} required /></div>
-                <div><label>Peso (kg)</label><input type="number" step="0.1" value={recordForm.weight} onChange={e => setRecordForm({...recordForm, weight: e.target.value})} /></div>
+                <div><label>Peso (kg)</label><input type="number" step="0.1" min="0.1" max="150" value={recordForm.weight} onChange={e => setRecordForm({...recordForm, weight: e.target.value})} /></div>
                 <div><label>Estado Geral</label>
                   <select value={recordForm.general_status} onChange={e => setRecordForm({...recordForm, general_status: e.target.value})}>
                     <option value="">--</option>
@@ -246,8 +316,11 @@ function TutorDashboard({ user, onLogout }) {
                   </select>
                 </div>
               </div>
-              <label>Sintomas</label>
-              <textarea value={recordForm.symptoms} onChange={e => setRecordForm({...recordForm, symptoms: e.target.value})} rows={2} placeholder="Descreva sintomas observados..." />
+              <label>Sintomas observados</label>
+              <SymptomPicker value={recordForm.symptoms} onChange={symptoms => setRecordForm({...recordForm, symptoms})} />
+              <input value={recordForm.other_symptoms} onChange={e => setRecordForm({...recordForm, other_symptoms: e.target.value})} placeholder="Outros sintomas (opcional)" />
+              <label>Escala de dor</label>
+              <PainScale value={recordForm.pain_score} onChange={pain_score => setRecordForm({...recordForm, pain_score})} />
               <label>Observacoes</label>
               <textarea value={recordForm.notes} onChange={e => setRecordForm({...recordForm, notes: e.target.value})} rows={2} placeholder="Notas livres..." />
               <button type="submit" className="secondary" style={{ width: '100%', marginTop: 8 }}>Salvar Registro</button>
@@ -256,29 +329,27 @@ function TutorDashboard({ user, onLogout }) {
 
           <div className="card">
             <h4 style={{ marginBottom: 16 }}>Historico de registros</h4>
-            {records.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)' }}>Nenhum registro ainda.</p>
-            ) : (
-              records.map(r => (
-                <div key={r.id} className="timeline-item">
-                  <span className="date">{new Date(r.date).toLocaleDateString('pt-BR')}</span>
-                  <div style={{ marginTop: 4, fontSize: 14 }}>
-                    {r.weight && <span><strong>Peso:</strong> {r.weight}kg </span>}
-                    {r.general_status && <span className="badge badge-mint" style={{ marginRight: 6 }}>{r.general_status}</span>}
-                    {r.appetite && <span className="badge badge-pink">{r.appetite}</span>}
-                  </div>
-                  {r.symptoms && <p style={{ marginTop: 6, fontSize: 13 }}><strong>Sintomas:</strong> {r.symptoms}</p>}
-                  {r.notes && <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>{r.notes}</p>}
-                </div>
-              ))
-            )}
+            <DailyLogList records={records} />
           </div>
         </div>
+      )}
+
+      {/* Progresso do protocolo (somente leitura) */}
+      {activeTab === 'tratamento' && selectedPet && (
+        <ProtocolPanel pet={selectedPet} />
       )}
 
       {/* Agenda do pet */}
       {activeTab === 'agenda' && selectedPet && (
         <PetAgenda pet={selectedPet} canCreate={false} />
+      )}
+
+      {route.petId && !selectedPet && loaded && (
+        <div className="card empty-state">
+          <h3>Animal nao encontrado</h3>
+          <p>Confira se ele esta cadastrado na sua conta.</p>
+          <button className="primary" style={{ marginTop: 16 }} onClick={() => goTo('pets')}>Ver meus animais</button>
+        </div>
       )}
     </div>
   )

@@ -3,17 +3,20 @@
 from typing import List
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..models import Pet, User, ChemoSession, PetRecord
+from ..models import Pet, User, ChemoSession
+from ..mongodb import get_daily_logs_collection
+from ..services.daily_logs import list_logs
 from ..schemas import (
     PetCreate, PetUpdate, PetResponse, DoseCalculation, DoseResult,
     BreedsResponse, ChartDataResponse, WeightPoint
 )
 from ..auth import get_current_user, require_vet
 from ..breeds import DOG_BREEDS, CAT_BREEDS
+from ..services.pet_photos import MAX_PHOTO_MB, detect_image_type, remove_photo, save_photo
 
 router = APIRouter(prefix="/api/pets", tags=["pets"])
 
@@ -35,6 +38,21 @@ def pet_to_response(pet: Pet) -> PetResponse:
         tutor_name=pet.tutor.full_name if pet.tutor else None,
         vet_name=pet.vet.full_name if pet.vet else None,
     )
+
+
+def ensure_pet_access(pet: Pet, user: User) -> None:
+    """Tutor so acessa os proprios pets; vet so os pets atribuidos a ele."""
+    if user.role == "tutor" and pet.tutor_id != user.id:
+        raise HTTPException(status_code=403, detail="Sem acesso a este pet")
+    if user.role == "vet" and pet.vet_id != user.id:
+        raise HTTPException(status_code=403, detail="Sem acesso a este pet")
+
+
+def get_pet_or_404(db: Session, pet_id: int) -> Pet:
+    pet = db.query(Pet).filter(Pet.id == pet_id).first()
+    if not pet:
+        raise HTTPException(status_code=404, detail="Pet nao encontrado")
+    return pet
 
 
 @router.get("/breeds", response_model=BreedsResponse)
@@ -78,22 +96,15 @@ def list_pets(db: Session = Depends(get_db), user: User = Depends(get_current_us
 
 @router.get("/{pet_id}", response_model=PetResponse)
 def get_pet(pet_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
-    pet = db.query(Pet).filter(Pet.id == pet_id).first()
-    if not pet:
-        raise HTTPException(status_code=404, detail="Pet nao encontrado")
-    # Verifica acesso
-    if user.role == "tutor" and pet.tutor_id != user.id:
-        raise HTTPException(status_code=403, detail="Sem acesso a este pet")
-    if user.role == "vet" and pet.vet_id != user.id:
-        raise HTTPException(status_code=403, detail="Sem acesso a este pet")
+    pet = get_pet_or_404(db, pet_id)
+    ensure_pet_access(pet, user)
     return pet_to_response(pet)
 
 
 @router.patch("/{pet_id}", response_model=PetResponse)
 def update_pet(pet_id: int, data: PetUpdate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
-    pet = db.query(Pet).filter(Pet.id == pet_id).first()
-    if not pet:
-        raise HTTPException(status_code=404, detail="Pet nao encontrado")
+    pet = get_pet_or_404(db, pet_id)
+    ensure_pet_access(pet, user)
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(pet, field, value)
     db.commit()
@@ -101,23 +112,59 @@ def update_pet(pet_id: int, data: PetUpdate, db: Session = Depends(get_db), user
     return pet_to_response(pet)
 
 
+@router.put("/{pet_id}/photo", response_model=PetResponse)
+async def upload_pet_photo(
+    pet_id: int, file: UploadFile = File(...),
+    db: Session = Depends(get_db), user: User = Depends(get_current_user),
+):
+    """Envia ou troca a foto do pet (JPG, PNG ou WEBP, ate 5 MB)."""
+    pet = get_pet_or_404(db, pet_id)
+    ensure_pet_access(pet, user)
+
+    content = await file.read()
+    if len(content) > MAX_PHOTO_MB * 1024 * 1024:
+        raise HTTPException(status_code=400, detail=f"Foto muito grande. Maximo: {MAX_PHOTO_MB} MB")
+    ext = detect_image_type(content)
+    if not ext:
+        raise HTTPException(status_code=400, detail="Envie uma imagem JPG, PNG ou WEBP")
+
+    old_url = pet.photo_url
+    pet.photo_url = save_photo(content, ext)
+    db.commit()
+    db.refresh(pet)
+    remove_photo(old_url)
+    return pet_to_response(pet)
+
+
+@router.delete("/{pet_id}/photo", response_model=PetResponse)
+def delete_pet_photo(pet_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    """Remove a foto do pet (volta a mostrar a inicial do nome)."""
+    pet = get_pet_or_404(db, pet_id)
+    ensure_pet_access(pet, user)
+    old_url = pet.photo_url
+    pet.photo_url = None
+    db.commit()
+    db.refresh(pet)
+    remove_photo(old_url)
+    return pet_to_response(pet)
+
+
 @router.get("/{pet_id}/chart", response_model=ChartDataResponse)
-def get_pet_chart_data(pet_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
-    """Dados para grafico do veterinario."""
-    pet = db.query(Pet).filter(Pet.id == pet_id).first()
-    if not pet:
-        raise HTTPException(status_code=404, detail="Pet nao encontrado")
+async def get_pet_chart_data(pet_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    """Dados para grafico: peso das sessoes (relacional) + diario do tutor (MongoDB)."""
+    pet = get_pet_or_404(db, pet_id)
+    ensure_pet_access(pet, user)
 
     sessions = db.query(ChemoSession).filter(ChemoSession.pet_id == pet_id).order_by(ChemoSession.date).all()
-    records = db.query(PetRecord).filter(PetRecord.pet_id == pet_id).order_by(PetRecord.date).all()
+    records = await list_logs(get_daily_logs_collection(), pet_id, newest_first=False)
 
     # Montar historico de peso (sessions + records)
     weight_points = []
     for s in sessions:
         weight_points.append(WeightPoint(date=s.date, weight=s.weight_at_session))
     for r in records:
-        if r.weight:
-            weight_points.append(WeightPoint(date=r.date, weight=r.weight))
+        if r.get("weight"):
+            weight_points.append(WeightPoint(date=date.fromisoformat(r["date"]), weight=r["weight"]))
 
     weight_points.sort(key=lambda x: x.date)
 
