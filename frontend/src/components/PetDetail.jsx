@@ -8,6 +8,7 @@ import DailyLogList from './DailyLogList'
 import PetAvatar from './PetAvatar'
 import PetAnalytics from './PetAnalytics'
 import SessionTolerance from './SessionTolerance'
+import ReportButton from './ReportButton'
 import { formatDate, todayISO } from '../dates'
 
 export const PET_TABS = ['dashboard', 'protocolos', 'sessao', 'registros', 'documentos', 'agenda']
@@ -111,7 +112,7 @@ function PetDetail({ pet, onUpdated, subTab = 'dashboard', onSubTabChange }) {
   return (
     <div>
       {/* Pet header */}
-      <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+      <div className="card pet-header" style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
         <PetAvatar pet={pet} size={64} radius={20} editable onChanged={onUpdated} onError={setError} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <h2 style={{ fontSize: 28 }}>{pet.name}</h2>
@@ -123,6 +124,7 @@ function PetDetail({ pet, onUpdated, subTab = 'dashboard', onSubTabChange }) {
             {pet.treatment_start_date && <span className="badge badge-mint">Inicio: {formatDate(pet.treatment_start_date)}</span>}
           </div>
         </div>
+        <ReportButton petId={pet.id} onError={setError} />
       </div>
 
       {/* Sub tabs */}

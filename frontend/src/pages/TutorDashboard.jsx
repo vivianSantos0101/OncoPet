@@ -10,6 +10,7 @@ import SymptomPicker from '../components/SymptomPicker'
 import PainScale from '../components/PainScale'
 import DailyLogList from '../components/DailyLogList'
 import PetAvatar from '../components/PetAvatar'
+import ReportButton from '../components/ReportButton'
 import PhotoField from '../components/PhotoField'
 import { uploadPetPhoto } from '../image'
 import { todayISO } from '../dates'
@@ -274,14 +275,15 @@ function TutorDashboard({ user, onLogout }) {
       {/* Diario do pet */}
       {activeTab === 'diario' && selectedPet && (
         <div>
-          <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div className="card pet-header" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <PetAvatar pet={selectedPet} size={64} radius={20} editable onChanged={loadPets} onError={setError} />
-            <div>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <h3>{selectedPet.name}</h3>
               <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
                 {selectedPet.breed} - {selectedPet.weight}kg - SC: {selectedPet.body_surface_area} m2
               </p>
             </div>
+            <ReportButton petId={selectedPet.id} onError={setError} />
           </div>
 
           <div className="card">

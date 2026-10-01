@@ -464,6 +464,8 @@ label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 13px; c
   .level-tile strong { grid-column: 1; grid-row: auto; font-size: 24px; }
   .level-tile .level-tile-label { grid-column: 1; grid-row: auto; font-size: 12.5px; }
   .level-tile-hint { display: none; }
+  .pet-header { flex-wrap: wrap; }
+  .pet-header .report-btn { width: 100%; justify-content: center; }
   .pal-patient { padding: 14px 14px 16px; }
   .pal-patient-head { flex-wrap: wrap; gap: 10px 12px; }
   .pal-patient-head .status-chip { order: 3; margin-left: 60px; }
@@ -473,6 +475,10 @@ label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 13px; c
   .tolerance-list li { grid-template-columns: 1fr auto; }
   .tolerance-detail { grid-column: 1 / -1; grid-row: 2; }
 }
+
+/* ─── Relatório PDF (RF-07) ─── */
+.report-btn { display: inline-flex; align-items: center; gap: 7px; flex-shrink: 0; padding: 10px 16px; font-size: 13.5px; }
+.report-btn:disabled { opacity: .7; cursor: progress; }
 
 /* ─── Responsivo ─── */
 @media (max-width: 900px) {
