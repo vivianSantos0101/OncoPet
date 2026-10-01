@@ -3,44 +3,15 @@ import {
   ComposedChart, LineChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine, Legend,
 } from 'recharts'
-import { AlertTriangle, ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
 import { formatDate } from '../dates'
+import { num, signed, shortDate } from '../format'
+import DataTable from './DataTable'
+import Direction from './Direction'
+import { AXIS, COLOR_AVERAGE, COLOR_VALUE, TOOLTIP_STYLE, legendText } from '../chartTheme'
 import { symptomLabel } from '../diary'
 
-// Paleta validada (scripts/validate_palette.js do skill de dataviz): passa em
-// contraste com o fundo branco e em separacao para daltonismo.
-const COLOR_VALUE = '#0ca678'   // valor medido
-const COLOR_AVERAGE = '#3b5bdb' // media movel
-const AXIS = { fontSize: 11, tick: { fill: '#94a3aa' }, axisLine: false, tickLine: false }
-const TOOLTIP_STYLE = { borderRadius: 12, border: 'none', boxShadow: '0 8px 24px rgba(16,42,51,.12)', fontSize: 13 }
-// Texto da legenda na cor de texto (a cor fica so no traco ao lado)
-const legendText = (value) => <span style={{ color: '#5f7179' }}>{value}</span>
 const MANY_POINTS = 12  // acima disso os pontos ficam so no hover, para nao poluir
-
-const num = (v, digits = 1) => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: digits })
-const signed = (v, digits = 1) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${num(Math.abs(v), digits)}`
-const shortDate = (d) => formatDate(d, { day: '2-digit', month: '2-digit' })
-
-/** Seta + texto: a direcao nunca e so cor. */
-function Direction({ value, goodWhenUp, children }) {
-  const Icon = value > 0 ? ArrowUpRight : value < 0 ? ArrowDownRight : Minus
-  const tone = value === 0 ? 'neutral' : (value > 0) === goodWhenUp ? 'good' : 'bad'
-  return <span className={`trend trend-${tone}`}><Icon size={15} aria-hidden="true" />{children}</span>
-}
-
-function DataTable({ columns, rows }) {
-  return (
-    <details className="chart-table">
-      <summary>Ver dados em tabela</summary>
-      <table>
-        <thead><tr>{columns.map(c => <th key={c.key}>{c.label}</th>)}</tr></thead>
-        <tbody>
-          {rows.map((r, i) => <tr key={i}>{columns.map(c => <td key={c.key}>{c.format ? c.format(r[c.key]) : r[c.key]}</td>)}</tr>)}
-        </tbody>
-      </table>
-    </details>
-  )
-}
 
 /** Estatisticas do tratamento (RF-05), calculadas no backend com NumPy. */
 function PetAnalytics({ data }) {

@@ -14,10 +14,9 @@ from sqlalchemy.orm import Session
 from ..analytics.stats import pain_stats, symptom_frequency, weight_stats
 from ..auth import get_current_user
 from ..database import get_db
-from ..models import ChemoSession, User
-from ..mongodb import get_daily_logs_collection
+from ..models import User
 from ..schemas import PainStatPoint, PetAnalytics, WeightStatPoint
-from ..services.daily_logs import list_logs
+from ..services.patient_history import load_logs, load_sessions, pain_series, weight_series
 from .pets import ensure_pet_access, get_pet_or_404
 
 router = APIRouter(prefix="/api/analytics", tags=["analytics"])
@@ -34,25 +33,15 @@ async def pet_analytics(
     ensure_pet_access(pet, user)
     today = reference_date or date.today()
 
-    sessions = db.query(ChemoSession).filter(ChemoSession.pet_id == pet_id).order_by(ChemoSession.date).all()
-    logs = await list_logs(get_daily_logs_collection(), pet_id, newest_first=False)
-    for log in logs:
-        log["date"] = date.fromisoformat(log["date"])
+    sessions = load_sessions(db, [pet_id])[pet_id]
+    logs = (await load_logs([pet_id]))[pet_id]
 
     # Peso: sessoes (relacional) + diario (MongoDB), em ordem de data
-    weights = sorted(
-        [(s.date, s.weight_at_session) for s in sessions] +
-        [(log["date"], log["weight"]) for log in logs if log.get("weight")],
-        key=lambda item: item[0],
-    )
-    w_dates = [d for d, _ in weights]
-    w_values = [v for _, v in weights]
+    w_dates, w_values = weight_series(sessions, logs)
     w_stats = weight_stats(w_dates, w_values)
 
     # Dor: so registros em que a dor foi avaliada
-    pain = [(log["date"], log["pain_score"]) for log in logs if log.get("pain_score") is not None]
-    p_dates = [d for d, _ in pain]
-    p_values = [v for _, v in pain]
+    p_dates, p_values = pain_series(logs)
     p_stats = pain_stats(p_dates, p_values, today)
 
     weight_points = [

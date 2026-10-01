@@ -142,6 +142,20 @@ PATIENTS = [
         "reminders": [("Sessão de vincristina", "sessao", 0, "10:00", None)],
         "documents": [],
     },
+    # Caso paliativo: dor alta, perda de peso, febre apos a ultima sessao e
+    # tutor sem registrar ha quase 2 semanas (aparece como critico no RF-06)
+    {
+        "name": "Bela", "pain": (5, 0.3), "species": "cao", "breed": "Rottweiler", "age": (9, 4),
+        "cancer": "Carcinoma de células de transição (bexiga)", "tutor": "pedro", "vet": "dra_ana", "clinic": 0,
+        "weight": 38.0, "trend": -0.35, "diary_stop": 12,
+        "side_effects": [(["febre", "letargia"], "Febre à noite, tremores", "ruim", "reduzido", "letargico", 2)],
+        "protocols": [{
+            "name": "Mitoxantrona + Piroxicam (paliativo)", "drug": "Mitoxantrona", "dose": 5,
+            "planned": 5, "interval": 21, "start": 49, "executed": 3,
+        }],
+        "reminders": [("Piroxicam 0,3 mg/kg com alimento", "medicacao", 0, "19:00", "diaria")],
+        "documents": [("Ultrassom de bexiga", "exame_imagem", -50)],
+    },
 ]
 
 # Dias apos a sessao: (sintomas marcados, outros sintomas, estado, apetite, energia, dor extra)
@@ -267,13 +281,13 @@ def seed(client, today: date = None, rng: random.Random = None) -> dict:
                 }))
 
         day = first_day + timedelta(days=3)
-        while day <= today - timedelta(days=1):
+        while day <= today - timedelta(days=pt.get("diary_stop", 1)):
             after_session = any(0 < (day - s).days <= 3 for s in session_days)
             base_pain, pain_trend = pt["pain"]
             pain = base_pain + pain_trend * ((day - first_day).days / 7) + rng.choice([-1, 0, 0, 1])
             other, notes = None, None
             if after_session and rng.random() < 0.6:
-                symptoms, other, status, appetite, energy, extra_pain = rng.choice(SIDE_EFFECTS)
+                symptoms, other, status, appetite, energy, extra_pain = rng.choice(pt.get("side_effects", SIDE_EFFECTS))
                 pain += extra_pain
             else:
                 symptoms, status, appetite, energy, notes = rng.choice(GOOD_DAYS)

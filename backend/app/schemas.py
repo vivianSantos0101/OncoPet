@@ -378,3 +378,74 @@ class PetAnalytics(BaseModel):
     pain: Optional[PainSummary] = None
     symptoms: List[SymptomCount]
 
+# ─── Cuidados paliativos (RF-06) ─────────────────────
+
+AlertLevel = Literal["estavel", "atencao", "critico"]
+Tolerance = Literal["boa", "moderada", "ruim", "sem_dados"]
+
+
+class PalliativeAlert(BaseModel):
+    level: AlertLevel
+    code: str
+    message: str
+
+
+class PostSessionGroup(BaseModel):
+    logs: int
+    pain_mean: Optional[float] = None
+    symptom_percent: Optional[float] = None
+
+
+class PostSessionEffect(BaseModel):
+    window_days: int
+    after_session: PostSessionGroup      # registros do 1o ao 3o dia apos uma sessao
+    other_days: PostSessionGroup
+    pain_difference: Optional[float] = None
+    symptom_difference: Optional[float] = None
+
+
+class SessionTolerance(BaseModel):
+    date: date
+    drug_name: Optional[str] = None
+    logs: int
+    max_pain: Optional[int] = None
+    symptom_days: int
+    symptoms: List[str]
+    tolerance: Tolerance
+
+
+class PalliativePatient(BaseModel):
+    pet_id: int
+    name: str
+    species: str
+    breed: str
+    photo_url: Optional[str] = None
+    cancer_type: Optional[str] = None
+    tutor_name: Optional[str] = None
+    level: AlertLevel
+    alerts: List[PalliativeAlert]
+    last_pain: Optional[int] = None
+    recent_pain_mean: Optional[float] = None
+    pain_recent_change: Optional[float] = None
+    weight_change_percent: Optional[float] = None
+    days_since_last_log: Optional[int] = None
+    sessions_count: int
+    pain_after_session: Optional[float] = None
+    pain_other_days: Optional[float] = None
+
+
+class PalliativeOverview(BaseModel):
+    reference_date: date
+    critico: int
+    atencao: int
+    estavel: int
+    patients: List[PalliativePatient]
+
+
+class PetPalliative(BaseModel):
+    pet_id: int
+    reference_date: date
+    level: AlertLevel
+    alerts: List[PalliativeAlert]
+    effect: Optional[PostSessionEffect] = None
+    sessions: List[SessionTolerance]
