@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .database import engine, Base
 from .mongodb import connect_mongodb, close_mongodb
-from .routers import auth, tutors, vets, pets, protocols, sessions, records, documents, clinics, reminders, exams, uploads
+from .routers import analytics, auth, tutors, vets, pets, protocols, sessions, records, documents, clinics, reminders, exams, uploads
 
 Base.metadata.create_all(bind=engine)
 
@@ -36,6 +36,7 @@ app.include_router(tutors.router)
 app.include_router(vets.router)
 app.include_router(pets.router)
 app.include_router(protocols.router)
+app.include_router(analytics.router)
 app.include_router(sessions.router)
 app.include_router(records.router)
 app.include_router(documents.router)
