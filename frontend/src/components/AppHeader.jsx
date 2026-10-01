@@ -1,11 +1,12 @@
 import { LogOut } from 'lucide-react'
+import { LogoMark } from './Logo'
 
 const ROLE_LABEL = { vet: 'Veterinario', tutor: 'Tutor' }
 
 function AppHeader({ role, userName, onLogout }) {
   return (
     <div className="header">
-      <h1>OncoPet</h1>
+      <h1><LogoMark size={36} title="" />OncoPet</h1>
       <div className="header-user">
         <span className={`role-badge ${role}`}>{ROLE_LABEL[role]}</span>
         <span className="user-name">{userName}</span>
