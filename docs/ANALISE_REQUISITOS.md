@@ -21,14 +21,14 @@ Legenda: ✅ atendido · 🟡 parcial · ❌ não iniciado
 | RF-03 | Múltiplos sintomas (vômito, letargia) + **escala de dor** no Mongo | Sintomas marcáveis + outros em texto + dor 0–10 em `daily_logs` | ✅ |
 | RF-04 | Protocolos de quimio com sessões **planejadas × executadas** | `ChemoProtocol` + `chemo_sessions.protocol_id`; rotas `/api/protocols`; progresso em `services/protocols.py`; telas do vet e do tutor | ✅ |
 | RF-05 | Estatísticas via NumPy consumidas pelos gráficos | `app/analytics/stats.py` (tendência por regressão, média móvel, dor recente, frequência de sintomas); rota `/api/analytics/pet/{id}`; gráficos de dor e peso no prontuário | ✅ |
-| RF-06 | Dashboard de Cuidados Paliativos (Mongo × sessões) | — | ❌ |
+| RF-06 | Dashboard de Cuidados Paliativos (Mongo × sessões) | `app/analytics/palliative.py` (dor e sintomas pós-sessão, tolerância por sessão, alertas); rotas `/api/palliative/overview` e `/api/palliative/pet/{id}`; aba **Paliativos** do vet e seção no prontuário | ✅ |
 | RF-07 | Exportar relatório clínico em PDF | — | ❌ |
 
 ## Requisitos não funcionais
 
 | RNF | Status | Observação |
 |---|---|---|
-| RNF-01 Agregação vetorizada com NumPy | ✅ | cálculos com arrays NumPy (`cumsum`, `polyfit`, `unique`, máscaras booleanas) |
+| RNF-01 Agregação vetorizada com NumPy | ✅ | cálculos com arrays NumPy (`cumsum`, `polyfit`, `unique`, `searchsorted`, máscaras e matrizes booleanas) |
 | RNF-02 Gráficos fluidos + tema escuro | 🟡 | Recharts ok; verificar/ajustar tema escuro em `index.css` |
 | RNF-03 IDs do relacional mapeando para documentos do Mongo | 🟡 | diário valida `pet_id` no relacional antes de gravar no Mongo; `exams` ainda não valida |
 | RNF-04 TS estrito no front; rotas REST separadas da camada analítica | 🟡 | camada analítica separada das rotas ✅; falta migrar o front para TypeScript |
@@ -46,7 +46,7 @@ Legenda: ✅ atendido · 🟡 parcial · ❌ não iniciado
 2. ~~**Modelo de protocolo (RF-04)**~~ — feito em `feature/protocolos-quimio`.
 3. ~~**Diário no Mongo (RF-02/03)**~~ — feito em `feature/diario-mongo` (inclui `scripts/migrate_records_to_mongo.py`).
 4. ~~**Camada analítica (RF-05, RNF-01/04)**~~ — feito em `feature/estatisticas` (`backend/app/analytics/`, rota `/api/analytics/pet/{id}`).
-5. **Dashboard paliativo (RF-06)** consumindo a camada analítica.
+5. ~~**Dashboard paliativo (RF-06)**~~ — feito em `feature/cuidados-paliativos` (ver [`MANUAL_PALIATIVO.md`](MANUAL_PALIATIVO.md)).
 6. **Relatório PDF (RF-07)** — ex.: ReportLab ou WeasyPrint no backend.
 7. **Migração do frontend para TypeScript (RNF-04)** — pode ser incremental (`allowJs`), começando por `api.ts` e tipos das respostas.
 8. Testes (pytest) e migrações (Alembic).
