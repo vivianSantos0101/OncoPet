@@ -1,8 +1,32 @@
-# OncoPet em producao (uma maquina com Docker).
+# OncoPet em producao (uma maquina com Docker): 3 copias do backend atras do Caddy (load balancer).
 # Uso: docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 # Passo a passo completo: docs/DEPLOY_AWS.md
 
 name: oncopet
+
+# Configuracao comum das copias do backend (o "<<: *backend" reaproveita este bloco)
+x-backend-env: &backend-env
+  DATABASE_URL: postgresql://oncopet:${POSTGRES_PASSWORD}@postgres:5432/oncopet
+  MONGODB_URL: mongodb://oncopet:${MONGO_PASSWORD}@mongodb:27017/?authSource=admin
+  SECRET_KEY: ${SECRET_KEY:?defina SECRET_KEY no .env.prod}
+  ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-480}
+  COOKIE_SECURE: "true"
+
+x-backend: &backend
+  build: ./backend
+  image: oncopet-backend
+  volumes:
+    - uploads:/app/app/uploads   # as 3 copias usam a mesma pasta de fotos e laudos
+  healthcheck:
+    test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health', timeout=3)"]
+    interval: 10s
+    timeout: 5s
+    retries: 6
+    start_period: 20s
+  depends_on:
+    backend1:
+      condition: service_healthy
+  restart: unless-stopped
 
 services:
   postgres:
@@ -36,22 +60,34 @@ services:
       retries: 30
     restart: unless-stopped
 
-  backend:
-    build: ./backend
+  # Tres copias iguais do backend. O Caddy (servico web) e o load balancer:
+  # reparte as requisicoes entre elas e tira do rodizio a que cair.
+  # A backend1 sobe primeiro (cria as tabelas); as outras esperam ela ficar healthy.
+  backend1:
+    <<: *backend
+    hostname: backend1
     environment:
-      DATABASE_URL: postgresql://oncopet:${POSTGRES_PASSWORD}@postgres:5432/oncopet
-      MONGODB_URL: mongodb://oncopet:${MONGO_PASSWORD}@mongodb:27017/?authSource=admin
-      SECRET_KEY: ${SECRET_KEY:?defina SECRET_KEY no .env.prod}
-      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-480}
-      COOKIE_SECURE: "true"
-    volumes:
-      - uploads:/app/app/uploads
+      <<: *backend-env
+      INSTANCE_NAME: backend1
     depends_on:
       postgres:
         condition: service_healthy
       mongodb:
         condition: service_healthy
-    restart: unless-stopped
+
+  backend2:
+    <<: *backend
+    hostname: backend2
+    environment:
+      <<: *backend-env
+      INSTANCE_NAME: backend2
+
+  backend3:
+    <<: *backend
+    hostname: backend3
+    environment:
+      <<: *backend-env
+      INSTANCE_NAME: backend3
 
   web:
     build: ./frontend
@@ -65,7 +101,9 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
-      - backend
+      - backend1
+      - backend2
+      - backend3
     restart: unless-stopped
 
 # Os dados ficam nestes volumes e sobrevivem a atualizacoes e reinicios
