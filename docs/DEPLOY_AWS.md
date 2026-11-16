@@ -21,17 +21,19 @@ Passo a passo para colocar o OncoPet no ar numa instância **EC2 com Ubuntu**, i
 ```mermaid
 flowchart LR
     N["Navegador"] -- "HTTPS :443" --> C["Caddy<br/>site React + certificado"]
-    C -- "/api, /docs" --> B["Backend<br/>FastAPI"]
-    B --> P[("PostgreSQL")]
-    B --> M[("MongoDB")]
+    C -- "/api, /docs<br/>(load balancer)" --> B1["backend1"]
+    C --> B2["backend2"]
+    C --> B3["backend3"]
+    B1 & B2 & B3 --> P[("PostgreSQL")]
+    B1 & B2 & B3 --> M[("MongoDB")]
 ```
 
 Tudo roda em **Docker**, numa máquina só (`docker-compose.prod.yml`):
 
 | Serviço | O que faz | Porta aberta na internet |
 |---|---|---|
-| `web` (Caddy) | Serve o site, gera o certificado HTTPS (Let's Encrypt) e repassa `/api` para o backend | 80 e 443 |
-| `backend` | API FastAPI | não (só dentro do Docker) |
+| `web` (Caddy) | Serve o site, gera o certificado HTTPS (Let's Encrypt) e é o **load balancer**: reparte o `/api` entre as 3 cópias do backend | 80 e 443 |
+| `backend1`, `backend2`, `backend3` | 3 cópias iguais da API FastAPI ([como funciona o balanceamento](LOAD_BALANCER.md)) | não (só dentro do Docker) |
 | `postgres` | Banco relacional | não |
 | `mongodb` | Diário do tutor e exames (com usuário e senha) | não |
 
@@ -147,13 +149,13 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod ps
 docker compose -f docker-compose.prod.yml --env-file .env.prod logs -f web
 ```
 
-Quando os 4 serviços estiverem `running` (postgres e mongodb como `healthy`) e o log do `web` mostrar `certificate obtained successfully`, abra o endereço no navegador. 🎉
+Quando os 6 serviços estiverem `running` (postgres e mongodb como `healthy`) e o log do `web` mostrar `certificate obtained successfully`, abra o endereço no navegador. 🎉
 
 > Dica: para não digitar tudo isso sempre, crie um atalho:
 > ```bash
 > echo "alias dc='docker compose -f ~/OncoPet/docker-compose.prod.yml --env-file ~/OncoPet/.env.prod'" >> ~/.bashrc && source ~/.bashrc
 > ```
-> Daí é só `dc ps`, `dc logs -f backend`, `dc up -d --build`. Os comandos abaixo usam esse atalho.
+> Daí é só `dc ps`, `dc logs -f backend1`, `dc up -d --build`. Os comandos abaixo usam esse atalho.
 
 ---
 
@@ -162,7 +164,7 @@ Quando os 4 serviços estiverem `running` (postgres e mongodb como `healthy`) e 
 Para apresentar o sistema já com pacientes, protocolos e diário:
 
 ```bash
-dc exec backend python scripts/seed_demo.py --api http://localhost:8000
+dc exec backend1 python scripts/seed_demo.py --api http://localhost:8000
 ```
 
 Logins: `dra_ana`, `dr_marcos` (veterinários) e `joao`, `mariana`, `carla`, `pedro`, `rafael` (tutores), todos com a senha `oncopet123`.
@@ -178,10 +180,14 @@ Depois de um merge na `main`:
 ```bash
 cd ~/OncoPet
 git pull
-dc up -d --build
+dc up -d --build --remove-orphans
 ```
 
 Os dados ficam nos volumes do Docker e **não se perdem** na atualização. Para liberar espaço das imagens antigas: `docker image prune -f`.
+
+O `--remove-orphans` apaga contêineres de serviços que saíram do `docker-compose.prod.yml`. Ele é necessário na atualização que trouxe o load balancer, porque o antigo serviço `backend` virou `backend1`, `backend2` e `backend3`.
+
+Se a atualização mudou o `deploy/Caddyfile`, reinicie o Caddy para ele ler a configuração nova: `dc restart web`.
 
 ---
 
@@ -194,7 +200,7 @@ mkdir -p ~/backups && cd ~/backups
 DATA=$(date +%F)
 dc exec -T postgres pg_dump -U oncopet oncopet | gzip > postgres-$DATA.sql.gz
 dc exec -T mongodb sh -c 'mongodump --username oncopet --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --archive --gzip' > mongo-$DATA.archive.gz
-dc cp backend:/app/app/uploads ./uploads-$DATA
+dc cp backend1:/app/app/uploads ./uploads-$DATA
 ls -lh
 ```
 
@@ -218,9 +224,9 @@ dc exec -T mongodb sh -c 'mongorestore --username oncopet --password "$MONGO_INI
 | Para | Comando |
 |---|---|
 | Ver se está tudo rodando | `dc ps` |
-| Ver os logs da API | `dc logs -f backend` |
+| Ver os logs da API (as 3 cópias) | `dc logs -f backend1 backend2 backend3` |
 | Ver os logs do Caddy (HTTPS) | `dc logs -f web` |
-| Reiniciar só a API | `dc restart backend` |
+| Reiniciar só a API | `dc restart backend1 backend2 backend3` |
 | Parar tudo | `dc down` (os dados continuam nos volumes) |
 | Subir de novo | `dc up -d` |
 | Memória e swap | `free -h` |
@@ -239,7 +245,7 @@ dc exec -T mongodb sh -c 'mongorestore --username oncopet --password "$MONGO_INI
 | Erro de certificado / `web` reclamando do ACME | Porta 80 fechada, ou o IP do `.env.prod` não é o da instância | Abra a porta 80. Confira `curl -s https://checkip.amazonaws.com` × `DOMAIN` no `.env.prod`; se mudou, corrija o `DOMAIN` e rode `dc up -d web` |
 | Mudou o IP (parou e ligou a instância sem Elastic IP) | O `sslip.io` usa o IP antigo | Associe um Elastic IP (2.2), atualize o `DOMAIN` no `.env.prod` e rode `dc up -d web` |
 | O build para no meio ("Killed") | Faltou memória | Confira o swap com `free -h`; se não aparecer, rode de novo o `deploy/preparar-ubuntu.sh` |
-| Página abre, mas dá erro ao entrar / `502` | A API ainda está iniciando ou caiu | `dc logs backend`; espere o postgres e o mongodb ficarem `healthy` |
+| Página abre, mas dá erro ao entrar / `502` | A API ainda está iniciando ou caiu | `dc logs backend1`; espere o postgres e o mongodb ficarem `healthy` |
 | Faz login, mas volta para a tela de login | Acessando por `http://` ou pelo IP puro | Use sempre o endereço `https://...sslip.io` (o cookie é `Secure`) |
 | `permission denied` ao usar `docker` | O usuário ainda não está no grupo docker | Saia e entre de novo no SSH |
 | Disco cheio | Imagens antigas acumuladas | `docker image prune -f` e `docker builder prune -f` |

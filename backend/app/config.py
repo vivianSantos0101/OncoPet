@@ -5,6 +5,7 @@ Os defaults batem com o docker-compose.yml para desenvolvimento local.
 """
 
 import os
+import socket
 
 SECRET_KEY = os.getenv("SECRET_KEY", "oncopet-dev-secret-key-change-in-production")
 ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
@@ -22,3 +23,7 @@ DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://oncopet:oncopet123@localh
 # MongoDB - historico / exames (porta 27018 para nao conflitar)
 MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27018")
 MONGODB_DB_NAME = os.getenv("MONGODB_DB_NAME", "oncopet_exams")
+
+# Nome desta copia do backend (backend1, backend2...). Com varias copias atras do
+# load balancer, aparece no cabecalho X-Backend-Instance e em /api/health.
+INSTANCE_NAME = os.getenv("INSTANCE_NAME") or socket.gethostname()
