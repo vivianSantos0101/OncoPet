@@ -2,9 +2,10 @@
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
+from .config import INSTANCE_NAME
 from .database import engine, Base
 from .mongodb import connect_mongodb, close_mongodb
 from .routers import analytics, auth, palliative, reports, tutors, vets, pets, protocols, sessions, records, documents, clinics, reminders, exams, uploads
@@ -30,6 +31,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.middleware("http")
+async def add_instance_header(request: Request, call_next):
+    """Diz qual copia do backend respondeu (para ver o load balancer funcionando)."""
+    response = await call_next(request)
+    response.headers["X-Backend-Instance"] = INSTANCE_NAME
+    return response
+
+
 app.include_router(auth.router)
 app.include_router(clinics.router)
 app.include_router(tutors.router)
@@ -45,6 +55,12 @@ app.include_router(documents.router)
 app.include_router(reminders.router)
 app.include_router(exams.router)
 app.include_router(uploads.router)
+
+
+@app.get("/api/health", tags=["saude"])
+def health():
+    """Usada pelo load balancer (Caddy) para saber se esta copia esta no ar. Nao exige login."""
+    return {"status": "ok", "instance": INSTANCE_NAME}
 
 
 @app.get("/")

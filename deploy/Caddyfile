@@ -1,12 +1,28 @@
-# Caddy: HTTPS automatico (Let's Encrypt) e um so endereco para site e API.
+# Caddy: HTTPS automatico (Let's Encrypt), um so endereco para site e API
+# e load balancer na frente das 3 copias do backend.
 # DOMAIN vem do .env.prod (ex.: 54-12-3-4.sslip.io).
 {$DOMAIN} {
 	encode zstd gzip
 
-	# API (FastAPI) e a documentacao interativa
+	# API (FastAPI) e a documentacao interativa.
+	# Load balancer: reparte as requisicoes entre as 3 copias do backend.
 	@api path /api/* /docs /docs/* /openapi.json /redoc
 	handle @api {
-		reverse_proxy backend:8000
+		reverse_proxy backend1:8000 backend2:8000 backend3:8000 {
+			# Rodizio: 1a requisicao na backend1, 2a na backend2, 3a na backend3, e recomeca
+			lb_policy round_robin
+
+			# Health check ativo: a cada 10 s pergunta /api/health para cada copia.
+			# A que nao responder sai do rodizio ate voltar.
+			health_uri /api/health
+			health_interval 10s
+			health_timeout 3s
+
+			# Health check passivo: se uma copia falhar numa requisicao de verdade,
+			# fica 30 s fora e a requisicao e tentada em outra (por ate 5 s)
+			fail_duration 30s
+			lb_try_duration 5s
+		}
 	}
 
 	# Site (React): arquivos do build; rotas como /pacientes/2 caem no index.html

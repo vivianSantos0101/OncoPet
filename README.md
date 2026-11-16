@@ -259,6 +259,7 @@ OncoPet/
 | [Manual de cuidados paliativos](docs/MANUAL_PALIATIVO.md) | Cruzamento diário × sessões, regras dos alertas |
 | [Manual do relatório PDF](docs/MANUAL_RELATORIO.md) | Conteúdo do relatório e decisões de implementação |
 | [Manual de autenticação](docs/MANUAL_AUTENTICACAO.md) | Login, cookie de sessão, proteção contra CSRF e permissões |
+| [Load balancer](docs/LOAD_BALANCER.md) | 3 cópias do backend atrás do Caddy, rodízio e health check |
 | [Deploy na AWS](docs/DEPLOY_AWS.md) | Colocar no ar numa EC2 com Docker, HTTPS e backup |
 
 ### Cálculo da dose
