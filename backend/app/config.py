@@ -27,3 +27,21 @@ MONGODB_DB_NAME = os.getenv("MONGODB_DB_NAME", "oncopet_exams")
 # Nome desta copia do backend (backend1, backend2...). Com varias copias atras do
 # load balancer, aparece no cabecalho X-Backend-Instance e em /api/health.
 INSTANCE_NAME = os.getenv("INSTANCE_NAME") or socket.gethostname()
+
+# Endereco do site, usado no link enviado por e-mail (ex.: https://3-228-54-7.sslip.io).
+# Vem da configuracao, nunca do pedido: assim ninguem forja um link para outro site.
+APP_URL = (os.getenv("APP_URL") or "http://localhost:5173").rstrip("/")
+
+# Recuperacao de senha: o link vale RESET_TOKEN_MINUTES; um novo pedido para a
+# mesma conta so gera outro e-mail depois de RESET_COOLDOWN_SECONDS
+RESET_TOKEN_MINUTES = int(os.getenv("RESET_TOKEN_MINUTES", "30"))
+RESET_COOLDOWN_SECONDS = int(os.getenv("RESET_COOLDOWN_SECONDS", "60"))
+
+# Servidor de e-mail (SMTP). Sem SMTP_HOST o e-mail nao sai: aparece no log do
+# backend (desenvolvimento e testes). Gmail: smtp.gmail.com, porta 587, senha de app.
+SMTP_HOST = os.getenv("SMTP_HOST", "")
+SMTP_PORT = int(os.getenv("SMTP_PORT") or "587")
+SMTP_USER = os.getenv("SMTP_USER", "")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+SMTP_FROM = os.getenv("SMTP_FROM", "")
+SMTP_STARTTLS = os.getenv("SMTP_STARTTLS", "true").lower() == "true"

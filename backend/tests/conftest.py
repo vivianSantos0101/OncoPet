@@ -33,7 +33,7 @@ def client():
 def register(client, username, role):
     res = client.post("/api/auth/register", json={
         "username": username, "password": "senha123",
-        "full_name": username.title(), "role": role,
+        "full_name": username.title(), "role": role, "email": f"{username}@exemplo.com",
     })
     assert res.status_code == 201, res.text
     body = res.json()

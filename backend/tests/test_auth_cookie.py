@@ -48,7 +48,8 @@ def test_logout_apaga_o_cookie(client):
 
 def test_cadastro_ja_entra_logado(client):
     res = client.post("/api/auth/register", json={
-        "username": "joao", "password": "senha123", "full_name": "Joao", "role": "tutor"})
+        "username": "joao", "password": "senha123", "full_name": "Joao", "role": "tutor",
+        "email": "joao@exemplo.com"})
     assert AUTH_COOKIE_NAME in res.headers["set-cookie"]
     assert client.get("/api/auth/me").json()["username"] == "joao"
 

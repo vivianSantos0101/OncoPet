@@ -1,12 +1,17 @@
 """Rotas de autenticacao."""
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
+from .. import emails
+from ..config import APP_URL, RESET_TOKEN_MINUTES
 from ..database import get_db
 from ..models import User
-from ..schemas import UserCreate, UserResponse, Token
+from ..schemas import (
+    ForgotPasswordRequest, MessageResponse, ResetPasswordRequest, Token, UserCreate, UserResponse,
+)
+from ..services.password_reset import create_reset_tokens, normalize_email, reset_password
 from ..auth import (
     clear_auth_cookie, create_access_token, get_current_user, hash_password, set_auth_cookie, verify_password,
 )
@@ -27,7 +32,7 @@ def register(user_data: UserCreate, response: Response, db: Session = Depends(ge
         username=user_data.username,
         hashed_password=hash_password(user_data.password),
         full_name=user_data.full_name,
-        email=user_data.email,
+        email=normalize_email(user_data.email),
         phone=user_data.phone,
         role=user_data.role,
         crmv=user_data.crmv if user_data.role == "vet" else None,
@@ -67,3 +72,38 @@ def logout():
     response = Response(status_code=204)
     clear_auth_cookie(response)
     return response
+
+
+# ─── Esqueci minha senha ─────────────────────────────
+
+FORGOT_MESSAGE = (
+    "Se o e-mail estiver cadastrado, enviamos um link para criar uma nova senha. "
+    "Ele vale por {minutes} minutos."
+)
+
+
+@router.post("/forgot-password", response_model=MessageResponse)
+def forgot_password(data: ForgotPasswordRequest, background_tasks: BackgroundTasks,
+                    db: Session = Depends(get_db)):
+    """Manda para o e-mail do cadastro um link para criar uma nova senha.
+
+    A resposta e sempre a mesma, exista ou nao uma conta com esse e-mail:
+    assim a rota nao serve para descobrir quem esta cadastrado.
+    O e-mail sai em segundo plano, depois da resposta.
+    """
+    for user, token in create_reset_tokens(db, data.email):
+        link = f"{APP_URL}/redefinir-senha?token={token}"
+        subject, text, html = emails.password_reset_email(user.full_name, user.username, link, RESET_TOKEN_MINUTES)
+        background_tasks.add_task(emails.send_email, user.email, subject, text, html)
+    return MessageResponse(message=FORGOT_MESSAGE.format(minutes=RESET_TOKEN_MINUTES))
+
+
+@router.post("/reset-password", response_model=MessageResponse)
+def reset_password_route(data: ResetPasswordRequest, db: Session = Depends(get_db)):
+    """Troca a senha usando o token do link. O token vale uma vez so."""
+    if reset_password(db, data.token, data.new_password) is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Link inválido ou vencido. Peça um novo em \"Esqueci minha senha\".",
+        )
+    return MessageResponse(message="Senha alterada. Entre com a nova senha.")

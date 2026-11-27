@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import api, { getErrorMessage } from '../api'
 import { LogoMark } from '../components/Logo'
+import ForgotPassword from '../components/ForgotPassword'
 
 function Login({ onLogin }) {
   const [isRegister, setIsRegister] = useState(false)
+  const [forgot, setForgot] = useState(false)
   const [role, setRole] = useState('vet')
   const [form, setForm] = useState({
     username: '', password: '', full_name: '',
@@ -34,6 +36,10 @@ function Login({ onLogin }) {
     } catch (err) {
       setError(getErrorMessage(err, 'Erro de conexao'))
     }
+  }
+
+  if (forgot) {
+    return <ForgotPassword onBack={() => setForgot(false)} />
   }
 
   return (
@@ -71,7 +77,7 @@ function Login({ onLogin }) {
               <div className="grid-2">
                 <div>
                   <label>Email</label>
-                  <input name="email" type="email" value={form.email} onChange={handleChange} />
+                  <input name="email" type="email" value={form.email} onChange={handleChange} required />
                 </div>
                 <div>
                   <label>Telefone</label>
@@ -92,6 +98,13 @@ function Login({ onLogin }) {
           <input name="username" value={form.username} onChange={handleChange} required />
           <label>Senha</label>
           <input name="password" type="password" value={form.password} onChange={handleChange} required />
+          {!isRegister && (
+            <p style={{ textAlign: 'right', marginTop: -8, marginBottom: 12 }}>
+              <button type="button" className="link-btn" style={{ fontSize: 13 }} onClick={() => setForgot(true)}>
+                Esqueci minha senha
+              </button>
+            </p>
+          )}
 
           {error && <p className="error">{error}</p>}
 
