@@ -2,16 +2,28 @@
 
 from datetime import date
 from typing import Optional, List, Literal
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 # ─── Auth ─────────────────────────────────────────────
+
+# Formato simples de e-mail: algo@algo.algo
+EMAIL_PATTERN = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
+
+
+def _strip(value):
+    """Tira espacos do comeco e do fim antes de conferir o formato."""
+    return value.strip() if isinstance(value, str) else value
+
 
 class UserCreate(BaseModel):
     username: str
     password: str
     full_name: str
-    email: Optional[str] = None
+    # Obrigatorio: e para ele que vai o link de "esqueci minha senha"
+    email: str = Field(..., max_length=100, pattern=EMAIL_PATTERN)
+
+    _strip_email = field_validator("email", mode="before")(_strip)
     phone: Optional[str] = None
     role: str  # "vet" ou "tutor"
     crmv: Optional[str] = None
@@ -36,6 +48,21 @@ class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str = Field(..., max_length=100, pattern=EMAIL_PATTERN)
+
+    _strip_email = field_validator("email", mode="before")(_strip)
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(..., min_length=20, max_length=200)
+    new_password: str = Field(..., min_length=6, max_length=128)
+
+
+class MessageResponse(BaseModel):
+    message: str
 
 
 # ─── Clinic ───────────────────────────────────────────

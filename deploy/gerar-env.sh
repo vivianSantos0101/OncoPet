@@ -19,6 +19,13 @@ POSTGRES_PASSWORD=$(openssl rand -hex 16)
 MONGO_PASSWORD=$(openssl rand -hex 16)
 SECRET_KEY=$(openssl rand -hex 32)
 ACCESS_TOKEN_EXPIRE_MINUTES=480
+
+# E-mail ("esqueci minha senha"). Sem SMTP_HOST o link aparece so no log do backend.
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASSWORD=
+SMTP_FROM=
 ENV
 chmod 600 .env.prod
 

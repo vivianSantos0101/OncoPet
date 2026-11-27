@@ -260,6 +260,7 @@ OncoPet/
 | [Manual do relatório PDF](docs/MANUAL_RELATORIO.md) | Conteúdo do relatório e decisões de implementação |
 | [Manual de autenticação](docs/MANUAL_AUTENTICACAO.md) | Login, cookie de sessão, proteção contra CSRF e permissões |
 | [Load balancer](docs/LOAD_BALANCER.md) | 3 cópias do backend atrás do Caddy, rodízio e health check |
+| [Recuperação de senha](docs/MANUAL_RECUPERACAO_SENHA.md) | "Esqueci minha senha" por e-mail: link de uso único e configuração do SMTP |
 | [Deploy na AWS](docs/DEPLOY_AWS.md) | Colocar no ar numa EC2 com Docker, HTTPS e backup |
 
 ### Cálculo da dose

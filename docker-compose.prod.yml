@@ -10,7 +10,15 @@ x-backend-env: &backend-env
   MONGODB_URL: mongodb://oncopet:${MONGO_PASSWORD}@mongodb:27017/?authSource=admin
   SECRET_KEY: ${SECRET_KEY:?defina SECRET_KEY no .env.prod}
   ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-480}
-  COOKIE_SECURE: "true"
+  COOKIE_SECURE: ${COOKIE_SECURE:-true}
+  # Link do e-mail de "esqueci minha senha" (padrao: https:// + DOMAIN)
+  APP_URL: ${APP_URL:-https://${DOMAIN}}
+  # Servidor de e-mail. Sem SMTP_HOST o link aparece so no log do backend
+  SMTP_HOST: ${SMTP_HOST:-}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  SMTP_FROM: ${SMTP_FROM:-}
 
 x-backend: &backend
   build: ./backend
