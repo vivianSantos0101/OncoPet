@@ -29,7 +29,7 @@ const FIELD_LABELS = {
   weight: 'Peso', weight_at_session: 'Peso no dia', age_years: 'Idade (anos)',
   age_months: 'Idade (meses)', dose_mg_m2: 'Dose (mg/m2)',
   planned_sessions: 'Sessoes planejadas', interval_days: 'Intervalo entre sessoes',
-  pain_score: 'Escala de dor',
+  pain_score: 'Escala de dor', email: 'E-mail', new_password: 'Nova senha',
 }
 
 function describeValidation(item) {
@@ -40,6 +40,8 @@ function describeValidation(item) {
   if ('gt' in ctx) return `${label} deve ser maior que ${ctx.gt}`
   if ('le' in ctx) return `${label} deve ser no maximo ${ctx.le}`
   if ('lt' in ctx) return `${label} deve ser menor que ${ctx.lt}`
+  if ('min_length' in ctx) return `${label} deve ter pelo menos ${ctx.min_length} caracteres`
+  if ('pattern' in ctx) return `${label}: formato invalido`
   return `${label}: valor invalido`
 }
 

@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import api, { SESSION_EXPIRED } from './api'
 import Login from './pages/Login'
 import VetDashboard from './pages/VetDashboard'
 import TutorDashboard from './pages/TutorDashboard'
+import ResetPassword from './pages/ResetPassword'
 import { LogoMark } from './components/Logo'
 
 // Versoes anteriores guardavam o token no localStorage: apaga o que sobrou
@@ -19,6 +20,7 @@ function App() {
   const [user, setUser] = useState(null)
   const [checking, setChecking] = useState(true)
   const navigate = useNavigate()
+  const location = useLocation()
 
   useEffect(() => {
     clearOldStorage()
@@ -38,6 +40,11 @@ function App() {
     try { await api.post('/auth/logout') } catch { /* sai mesmo assim */ }
     setUser(null)
     navigate('/', { replace: true })
+  }
+
+  // Link de "esqueci minha senha" enviado por e-mail: abre com ou sem login
+  if (location.pathname === '/redefinir-senha') {
+    return <ResetPassword />
   }
 
   if (checking) {
